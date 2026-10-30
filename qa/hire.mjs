@@ -2,7 +2,8 @@ import {z} from 'zod';
 
 const TEXT=new Set(['string','text','textarea']);
 const SKIP=new Set(['none']);
-const PREFERRED=/^(prompt|query|brief|request|task|instructions?|description|input|text|message|topic)$/i;
+// Matches whole words in ids like `research_question` and names like "Research Question".
+const PREFERRED=/(^|[\s_-])(prompt|query|brief|request|task|instructions?|description|input|text|message|topic|question)($|[\s_-])/i;
 
 /** Flatten MIP-003 input schemas: {input_data:[...]}, {input_groups:[{input_data:[...]}]} or a bare array. */
 export function schemaFields(inputSchema){
@@ -67,7 +68,10 @@ export async function buildInputData({inputSchema,serviceBrief,llm}){
   system:'You fill an AI agent\'s input form so that it produces exactly the requested deliverable. Put every requirement into the most suitable free-text field verbatim. Use only the listed field ids and allowed values.',
   prompt:`Form fields:\n${JSON.stringify(describe,null,1)}\n\nRequest to encode:\n"""\n${serviceBrief}\n"""\n\nReturn {"inputData": {<fieldId>: value}}.`,
   schema:z.object({inputData:z.record(z.string(),z.union([z.string(),z.number(),z.boolean(),z.array(z.string()),z.array(z.number())]))})});
- const data={...hidden,...out.inputData};
+ // Never send empty optional values: Preprod's Advanced Web Research failed start_job on additional_context:"" (2026-10-30).
+ const optional=new Set(fields.filter(isOptional).map(f=>f.id));
+ const filled=Object.fromEntries(Object.entries(out.inputData).filter(([k,v])=>!(optional.has(k)&&(v===''||(Array.isArray(v)&&!v.length)))));
+ const data={...hidden,...filled};
  const p=validateInputData(inputSchema,data);
  if(p.length)throw new Error(`Could not fill the agent form: ${p.join('; ')}`);
  return data;

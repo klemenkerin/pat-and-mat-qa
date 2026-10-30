@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {buildInputData,validateInputData,composeServiceBrief,schemaFields} from '../qa/hire.mjs';
 const single={input_data:[{id:'prompt',type:'textarea',name:'Prompt'}]};
 const withOption={input_data:[{id:'query',type:'string',name:'Query'},{id:'format',type:'option',name:'Format',data:{values:['csv','json']}}]};
@@ -35,4 +36,14 @@ test('service brief includes requirements and fixes only on retries',()=>{
  assert.ok(!a.includes('rejected'));
  const b=composeServiceBrief({brief:'Get X',criteriaText:'1. c',attempt:2,fixInstructions:['fix dates']});
  assert.match(b,/Hard requirements[\s\S]*1\. c[\s\S]*rejected[\s\S]*- fix dates/);
+});
+test('real Preprod form (Advanced Web Research): question field is the main field, optional context left out',async()=>{
+ const {structured}=JSON.parse(readFileSync(new URL('../config/agents.json',import.meta.url),'utf8'));
+ const data=await buildInputData({inputSchema:structured[0].inputSchema,serviceBrief:'B',llm:noLlm});
+ assert.deepEqual(data,{research_question:'B'});
+});
+test('LLM mapping never sends empty optional values',async()=>{
+ const s={input_data:[{id:'q',type:'string'},{id:'mode',type:'option',data:{values:['a','b']}},{id:'extra',type:'textarea',validations:[{validation:'optional',value:'true'}]}]};
+ const llm={generateJson:async()=>({inputData:{q:'B',mode:'a',extra:''}})};
+ assert.deepEqual(await buildInputData({inputSchema:s,serviceBrief:'B',llm}),{q:'B',mode:'a'});
 });

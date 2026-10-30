@@ -43,7 +43,7 @@ const APPROVE=/^\s*approve\b/i;
 
 export const marker=key=>`[qa:${key}]`;
 const withMarker=(text,key)=>`${String(text??'').trim()}\n\n${marker(key)}`;
-const short=e=>String(e?.message??e).replace(/coworker_[A-Za-z0-9_-]+/g,'coworker_***').slice(0,300);
+const short=(e,max=300)=>String(e?.message??e).replace(/coworker_[A-Za-z0-9_-]+/g,'coworker_***').slice(0,max);
 
 export function createPipeline({deps,config}){
  const {sokosumi:api,journal,mode,catalog}=deps;
@@ -152,7 +152,7 @@ export function createPipeline({deps,config}){
     try{job=await api.hire(s.taskId,{agentId:s.agent.id,inputSchema:s.inputSchema,inputData,maxCredits:s.contract.retry.maxCreditsPerHire,name});}
     catch(e){
      if(e?.status===402||/insufficient credits/i.test(String(e?.message)))return fail(s,'Out of credits: the workspace cannot pay for another hire.');
-     return fail(s,`Hiring ${s.agent.name} failed: ${short(e)}`);
+     return fail(s,`Hiring ${s.agent.name} failed: ${short(e,1000)}`);
     }
     return transition(updateAttempt(s,a.n,{jobId:job.id,hiredAt:now()}),'job-polling',{},now());
    }
