@@ -104,6 +104,9 @@ Optional: Masumi Payment Service (Postgres) for the paid QA Task (template flow)
 - **Language:** plain ESM JavaScript (`.mjs`) with JSDoc types, matching the template. Tests use `node:test` and `node:assert/strict`. No TypeScript build step.
 - **Tests:** every step adds automated tests. `npm test` must stay green at every gate. Live tests (they hit Preprod or the model API) go in `scripts/` as explicit commands and are never part of `npm test`.
 
+
+> **Update 2026-10-30 (verified):** Preprod Core removed `GET /v1/users/me/workspace-access` (now `/v1/users/me/workspaces`). CLI 1.0.4 calls the old route, so every `--personal` command fails with 404 `route_not_found`. **Use CLI 1.1.0.** It has the same package layout, the same runtime exports (`createCoworkerHttpClient`, `readRuntimeCredential`, `fetchTaskEvents`), the same vault format and the same JSON output, so the template works unchanged. Wherever this plan says 1.0.4, read 1.1.0.
+
 ### 0.6 The QA Task state machine (shared by both agents)
 
 Journal file: `${STATE_DIR}/<taskId>.json`. Phases (append-only history plus current `phase`):

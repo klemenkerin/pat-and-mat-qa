@@ -1,6 +1,6 @@
 # Runbook: live gates (run these in your Mac terminal)
 
-All commands run from the repo root with Node 24 and Sokosumi CLI 1.0.4, logged in with `sokosumi --preprod auth login`.
+All commands run from the repo root with Node 24 and Sokosumi CLI **1.1.0** (1.0.4 is broken against current Preprod: `--personal` commands return 404 on `/v1/users/me/workspace-access`), logged in with `sokosumi --preprod auth login`.
 Never paste keys into chat, commits or Task text.
 
 ## Gate 1.3: baseline template run
