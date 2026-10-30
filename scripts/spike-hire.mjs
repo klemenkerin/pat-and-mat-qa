@@ -10,10 +10,16 @@ import {join} from 'node:path';
 import {parseArgs} from 'node:util';
 import {createLiveAdapter} from '../qa/live.mjs';
 import {JOB_TERMINAL,effectiveJobStatus} from '../qa/pipeline.mjs';
+import {acquireWorkerLock} from '../worker-lock.mjs';
+import {statePath} from '../state-dir.mjs';
 
 const {values:o}=parseArgs({options:{agent:{type:'string'},brief:{type:'string'},'input-json':{type:'string'},'max-credits':{type:'string'},refund:{type:'boolean'},'timeout-min':{type:'string'},task:{type:'string'},job:{type:'string'}}});
 if(!o.agent){console.error('--agent AGENT_ID is required');process.exit(2);}
 if(!o.task!==!o.job){console.error('--task and --job must be given together');process.exit(2);}
+// Hold the Coworker's worker lock: a running worker would adopt the READY spike Task as a QA request.
+let releaseLock;
+try{releaseLock=acquireWorkerLock(statePath('worker.lock'));}catch(e){console.error(`${e.message}. Stop the worker for this Coworker before running the spike.`);process.exit(2);}
+process.once('exit',releaseLock);
 const dir=join('.local','spike',new Date().toISOString().replace(/[:.]/g,'-'));mkdirSync(dir,{recursive:true,mode:0o700});
 const save=(name,v)=>writeFileSync(join(dir,name),typeof v==='string'?v:JSON.stringify(v,null,1),{mode:0o600});
 const log=(...a)=>console.log(new Date().toISOString(),...a);
