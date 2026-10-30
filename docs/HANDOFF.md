@@ -229,6 +229,7 @@ CSV detection: ≥2 rows, ≥2 columns, and (when a header is expected) the head
 - **Idea text:** empty OCR → fail. Otherwise a text-only LLM returns `{matches, confidence, reason}`; pass if matches and confidence ≥ 0.6. Labelled "judged by LLM from OCR text".
 - **Drafting rules:** quoted text in the brief → `exact` (code overrides the LLM); no quotes + LLM says exact → downgrade to `idea`; objects = concrete nouns only, singularised, counts from number words; colour/style go to `notes` (unchecked in MVP).
 - **Fixtures:** render text PNGs from SVG with sharp and commit the PNGs (fonts vary by system).
+- **Image service Agent (decided 2026-10-30 with the human):** Preprod has no affordable image Agent (only "Stock Photos Agent", 500 credits > 20-credit cap). We build a **local stand-in image Agent** behind `QA_HIRE_BACKEND=mock`, with a MIP-003-shaped input form. Backend A (first): compose the image from the brief with sharp (rendered text plus free-licensed object photos), free and offline. Optional later, if time allows: real generation (local SD-Turbo on the M2 Pro, or OpenAI images if the human's key allows). The demo states that the image hire is a local stand-in.
 - Everything else (approval, hire, poll, refund, rebrief, complete) reuses the shared pipeline unchanged. Implement `qa/modes/image.mjs` with the same interface as `qa/modes/structured.mjs` (+ optional `warmUp()` to load the detector and OCR worker at start).
 
 ---
