@@ -8,14 +8,14 @@ const enc=encodeURIComponent;
 const data=body=>(body&&typeof body==='object'&&'data' in body)?body.data:body;
 const list=body=>{const d=data(body);return Array.isArray(d)?d:[];};
 
-/** Runs the pinned Sokosumi CLI (1.0.4) in Preprod mode and parses its JSON output. */
+/** Runs the Sokosumi CLI (1.1.0, see HANDOFF §4.1) in Preprod mode and parses its JSON output. */
 export function runCli(args,{exec=execFileSync}={}){
  return JSON.parse(exec('sokosumi',['--preprod',...args,'--json'],{encoding:'utf8',timeout:60000,maxBuffer:8*1024*1024}));
 }
 
 /**
  Adapter between the QA pipeline and Sokosumi Core.
- - client: Coworker HTTP client from CLI 1.0.4 (createCoworkerHttpClient) — Preprod only, /v1 paths.
+ - client: Coworker HTTP client from the CLI (createCoworkerHttpClient, same in 1.0.4 and 1.1.0) — Preprod only, /v1 paths.
  - runtime: modules loaded by sokosumi-runtime.mjs ({fetchTaskEvents, createCoworkerHttpClient, readRuntimeCredential}).
  - target: taskTarget() from the template (coworkerId, organizationId, runtimeArgs).
  - cli: function(args) -> parsed JSON (defaults to runCli).

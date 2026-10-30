@@ -32,34 +32,23 @@ We build **two specialist QA Coworkers** (mentors' advice: show the pattern scal
 
 ## 2. Current status (exact)
 
-### 2.1 Gate log
+### 2.1 Gate log (updated 2026-10-30, evening; full evidence in `docs/resources.md`)
 | Gate | What | Status | Evidence |
 |---|---|---|---|
-| 1.0 | Toolchain | ✅ | Node 24 via nvm; **Sokosumi CLI 1.1.0** (not 1.0.4, see §4.1) |
-| 1.1 | Template clone + baseline tests | ✅ | 29/29 template tests |
-| 1.2 | Account, Vendor, Coworker, runtime key import | ✅ | IDs in `docs/resources.md` |
-| 1.3 | Unmodified template end-to-end | ✅ | Task `01a18e55-4cae-749e-af90-258b0aaed74f` COMPLETED in ~7 s; `docs/evidence/baseline-task.json` |
-| 1.4 | Per-Coworker worker (`worker:structured`, own `STATE_DIR`, lock) | ⏳ code done, **live run pending** | run `bash scripts/run-gates-1.sh` |
-| 2.1 | Journal + state machine | ✅ unit (16 tests) | `test/pipeline.test.mjs` |
-| 2.2 | Sokosumi adapter | ✅ unit; **live read-only check pending** | in `run-gates-1.sh` |
-| 2.3 | LLM JSON adapter | ✅ unit; **live model check pending** | in `run-gates-1.sh` |
-| 2.4 | Request parser + agent catalog | ✅ unit | |
-| 2.5 | Customer script | ✅ code; live use pending | `scripts/customer.mjs` |
-| **1.5** | **SPIKE: hire an Agent from inside a Task** | ❌ **not run. Biggest unknown. Do next.** | `scripts/spike-hire.mjs` |
-| 3.1 | Structured contract schema + renderer | ✅ unit | |
-| 3.2 | Contract drafting/revision (LLM + deterministic post-processing) | ✅ unit; live check pending | |
-| 3.3 | Approval loop (INPUT_REQUIRED, APPROVE, revisions, timeout) | ✅ unit (in pipeline); live pending | |
-| 3.4 | Hire input builder | ✅ unit; live pending | |
-| 3.5 | Deliverable extraction | ✅ unit; verify on real spike output | |
-| 3.6 | Structured validators + report | ✅ unit (15 tests incl. 10k-row perf) | |
-| 3.7 | Retry loop (refund + rebrief + rehire) | ✅ unit (in pipeline); live pending | |
-| 3.8 | Completion/failure + worker wiring (`qa-worker.mjs`) | ✅ code; **live E2E pending** | |
-| 3.9 | TUM Workspace run | ❌ | needs org approvals `[HUMAN]` |
+| 1.0–1.3 | Toolchain, template, account/Vendor/Coworker, template E2E | ✅ | `docs/resources.md` |
+| 1.4 | Per-Coworker worker | ✅ | rerun after stale processes were stopped |
+| 1.5 | SPIKE: Coworker hires an Agent inside a Task | ✅ | `docs/spike-findings.md` (hire works; Job reads need owner context; 500-char input limit) |
+| 2.1–2.5 | QA core (journal, adapter, LLM, request, customer script) | ✅ | unit + live checks |
+| 3.1–3.8 | Structured QA Coworker (Pat), incl. live happy run, retry loop with refund, crash/restart | ✅ | `docs/demo.md`; tag `agent1-personal` |
+| 3.9 | Structured Coworker in the TUM Workspace | ❌ | needs org approval / seat `[HUMAN]` |
 | 3.10 | Optional Eve follow-up chat | ❌ optional | |
-| Part 4 | Image agent | ❌ not started | plan Part 4 |
-| Part 5 | Optional paid QA Task, demo, submission | ❌ | |
+| 4.1–4.6 | Image Coworker (Iris), image contract, acquisition, OCR, detector benchmark (OWLv2 @ 0.15) | ✅ | `docs/detector-choice.md` |
+| 4.7 | Image validator pack + report | ✅ | unit + slow suite |
+| 4.8 | Image mode E2E (live), happy + retry, both workers concurrently | ✅ | `docs/demo.md`; image hire = local stand-in (`QA_HIRE_BACKEND=mock`, §4.6) |
+| 4.9 | Image Coworker in the TUM Workspace | ❌ | same `[HUMAN]` steps as 3.9 |
+| Part 5 | Optional paid QA Task; README, demo, submission | ❌ | README is still the template's |
 
-**Unit tests:** `npm test` → **104 pass, 0 fail** (Node 22 in the cloud workspace; run again on Node 24).
+**Tests:** `npm test` → 149 pass; `npm run test:slow` → 6 pass (downloads ~155 MB of models on first run). Credits used: ~8 of the 100-credit budget.
 
 ### 2.2 What the human has set up (Mac)
 - Node 24 via nvm. **They must be on Node 24 in every terminal** (`nvm use 24`; recommended `nvm alias default 24`). A Node 26 shell caused `spawnSync sokosumi ENOENT`, because global npm packages are per nvm version.
@@ -68,16 +57,13 @@ We build **two specialist QA Coworkers** (mentors' advice: show the pattern scal
 - Coworker "Pat - Structured data QA" `01a18e40-3f26-743b-b191-e710204e055f` (slug `pat-structured-data-qa`, capability `tasks`, personal access, `isWhitelisted:false`). Runtime key imported into the macOS keychain via `runtime key-import`.
 - User id (Task owner) `01a18e1e-c415-7388-b980-7ceb710c98c4`.
 - `.env` (git-ignored, mode 600): model provider = **OpenAI** through the template's OpenAI-compatible provider: `ZAI_BASE_URL=https://api.openai.com/v1`, `ZAI_MODEL=gpt-5.4-nano`, `ZAI_CONTEXT_WINDOW_TOKENS=400000`, `LLM_TEMPERATURE=` (blank), `ZAI_API_KEY` set. `COWORKER_ID` set to the structured Coworker. **Never print or read the key.**
-- `.env.structured` (git-ignored): `QA_MODE=template`, `COWORKER_ID=01a18e40-…`, `STATE_DIR=.local/structured`, org fields blank.
-- `config/agents.json` is **empty**. The team has grouped existing Preprod Agents into "structured" and "image" groups but has **not yet given the IDs**. Ask them, or list with `sokosumi --preprod agents list --json` and confirm the grouping with the human.
-- **Credit budget for hires: not yet given by the human. Ask before the spike** (per-hire cap and total cap).
+- `.env.structured` (git-ignored): `QA_MODE=structured`, `COWORKER_ID=01a18e40-…`, `STATE_DIR=.local/structured`, org fields blank.
+- `config/agents.json`: structured = "Expose: Advanced Web Research" `cmmdca97d000304icco9htf5n` (1 credit, chosen by the agent with the human's OK); image = local stand-in `local-image-standin` (mock), because Preprod's only image Agent costs 500 credits.
+- Image Coworker "Iris" `01a18eb7-c523-7195-a1e5-238f76defa8b` (`.env.image`: `QA_MODE=image`, `QA_HIRE_BACKEND=mock`, `STATE_DIR=.local/image`).
+- **Credit budget:** Preprod only, at most 20 credits per hire and 100 in total.
 
-### 2.3 Not yet known (resolve with the spike, Step 1.5)
-1. Does `POST /v1/tasks/{taskId}/jobs` (Coworker hires an Agent inside its Task) actually work on Preprod? The route exists in Core source. Sokosumi's glossary says the web catalog is "discovery only while app Hire is off".
-2. Can the Coworker key read `GET /v1/agents/{id}/input-schema`? (Fallback: store `inputSchema` in `config/agents.json`.)
-3. Real Job output shape: `result` markdown? fenced CSV? `files` with signed URLs? `links`? Are `resultHash` / `identifierFromPurchaser` present? jobType PAID or FREE? Credits charged? Duration?
-4. Does `GET /v1/tasks/{id}/jobs` return the `name` we pass at hire time? Crash-reconciliation in `hire-pending` matches on `name === "QA attempt <n>"`. If `name` is not returned, change reconciliation to "any job in the task not yet recorded in `attempts`".
-5. Does `POST /v1/jobs/{id}/refund` with `X-Context-User-Id` work for a Coworker (expected 200 → `refund_pending`, or 422 if not PAID/no on-chain purchase)?
+### 2.3 Spike questions
+All five were answered by the Gate 1.5 spike: see `docs/spike-findings.md`.
 
 ---
 
@@ -101,7 +87,7 @@ comments.mjs, paid-task.mjs   template, changed only to use statePath(). paid-ta
 qa/config.mjs         Zod-validated env: QA_MODE, COWORKER_ID, QA_MAX_ATTEMPTS_DEFAULT=3, QA_MAX_CREDITS_PER_HIRE_DEFAULT=50,
                       QA_JOB_POLL_SECONDS=12 (min 10), QA_JOB_TIMEOUT_MINUTES=30, QA_APPROVAL_TIMEOUT_MINUTES=60,
                       QA_MAX_REVISION_ROUNDS=3, QA_STOP_AFTER (phase name, for live gates), QA_HIRE_BACKEND=sokosumi|mock
-                      (mock = local stand-in image Agent, qa/mock/), DETECTOR_MODEL, DETECTOR_DTYPE=q8, DETECTOR_THRESHOLD=0.3, OCR_LANG=eng,
+                      (mock = local stand-in image Agent, qa/mock/), DETECTOR_MODEL, DETECTOR_DTYPE=q8, DETECTOR_THRESHOLD=0.15, OCR_LANG=eng,
                       OCR_EXACT_MAX_EDIT_RATIO=0.05. Blank env values = defaults.
 qa/journal.mjs        Atomic JSON journal per task: ${STATE_DIR}/qa-<taskId>.json; artefacts in ${STATE_DIR}/qa-<taskId>/attempt-N/.
 qa/pipeline.mjs       The QA state machine (see §4.3). All side effects via injected deps → fully unit-tested with fakes.
@@ -234,33 +220,17 @@ CSV detection: ≥2 rows, ≥2 columns, and (when a header is expected) the head
 
 ---
 
-## 5. What to do next (in order; each gate must pass before the next)
+## 5. What to do next (in order)
 
-1. **Sanity:** `nvm use 24 && node -v && sokosumi --version` (→ 1.1.0) `&& npm ci && npm test` (expect 104 pass).
-2. **Gates 2.3, 2.2, 1.4:** `bash scripts/run-gates-1.sh`. Read `.local/gate-logs/gates-1-*.log`. All three must print `RESULT … PASS`. If 2.3 fails with a model error, check `ZAI_*` (do not print the key) and maybe switch to `gpt-5.4-mini`. Record results in `docs/resources.md`.
-3. **Ask the human** `[HUMAN]` for (a) the Agent IDs in their "structured" and "image" groups and (b) the credit budget (per hire / total). Check Preprod credits in the Personal Workspace (https://preprod.sokosumi.com/billing?tab=credits).
-4. **Gate 1.5 spike** (worker stopped): `node --env-file=.env --env-file=.env.structured scripts/spike-hire.mjs --agent <STRUCT_AGENT> --max-credits <N>` (optionally `--refund`). Write `docs/spike-findings.md` from `.local/spike/<time>/findings.json`, answering all five questions in §2.3. Repeat with one image Agent. **If hiring is blocked: stop and tell the human.** The fallback is the mock backend (`QA_HIRE_BACKEND=mock`, not implemented yet; see plan Step 1.5 Fallback). Adapt code to findings (e.g. reconciliation by name, input-schema fallback, extraction for the real output shape) and add regression tests with the real output as fixtures.
-5. Fill **`config/agents.json`** (`{"structured":[{"id","name","credits","notes","inputSchema"?}], "image":[…]}`).
-6. **Live structured gates** (`docs/RUNBOOK.md`):
-   - Set `QA_MODE=structured` in `.env.structured`. Step through `QA_STOP_AFTER=approved` (Gate 3.3), then `QA_STOP_AFTER=verifying` (3.4) and `verified` (3.5/3.6 on real output), then unset.
-   - Gate 3.8 happy run + retry run (strict contract so attempt 1 fails) + crash/restart test.
-   - Record Task IDs in `docs/demo.md`. `git tag agent1-done`.
-7. **Gate 3.9 TUM Workspace** `[HUMAN approvals]`:
-   - `sokosumi --preprod workspaces list --json`
-   - `coworkers connect <CW> --vendor-id <V> --workspace-id <ORG> --json` → an org owner/admin approves if PENDING
-   - `workspaces check <ORG>` → `taskSeatEligible:true`, access GRANTED
-   - set `SOKOSUMI_ORGANIZATION_ID/SLUG` in `.env.structured`
-   - `customer.mjs … --org-slug <slug>`
-8. **Part 4, image agent:**
-   - register a second Coworker (`coworkers register --vendor-id 01a18e31-8ed8-75b8-b2e5-e1e71eb3c5a8 --name "<name> - Image QA" --capability tasks --personal --json`), import its key, create `.env.image` from the example
-   - Steps 4.1–4.9 per the plan
-9. Part 5 (optional paid QA via the template's Masumi Payment Service flow; needs Docker/Postgres, Blockfrost key, test ADA `[HUMAN]`), demo script, README, submission checklist (https://www.masumi.network/tum-hackathon/submission), team GitHub remote.
+1. **Sanity:** `nvm use 24 && sokosumi --version` (→ 1.1.0) `&& npm ci && npm test` (expect 149 pass).
+2. **Gates 3.9 / 4.9, TUM Workspace** `[HUMAN approvals]`: `workspaces list` → `coworkers connect <CW> --vendor-id <V> --workspace-id <ORG>` for Pat and Iris → an org owner/admin approves → `workspaces check <ORG>` (`taskSeatEligible:true`, GRANTED) → set `SOKOSUMI_ORGANIZATION_ID/SLUG` in `.env.structured` / `.env.image` → one E2E run each with `customer.mjs … --org-slug <slug>`. Then `git tag agent1-done` / `agent2-done`.
+3. **Optional:** real image generation behind the stand-in's input form (SD-Turbo locally or OpenAI images); Eve follow-up chat (3.10); paid QA Task (5.1, needs Docker/Postgres, Blockfrost key, test ADA `[HUMAN]`).
+4. **Step 5.2:** rewrite README (what, architecture, run commands for both workers, limits incl. the mock image hire), final demo script, secrets check, team GitHub remote `[HUMAN]`, submission checklist (https://www.masumi.network/tum-hackathon/submission).
 
 ## 6. Things only the human can do `[HUMAN]` (stop and ask)
 - Browser login: `sokosumi --preprod auth login` (if the session expires).
 - Web approvals: Vendor grant in the Personal Workspace (if a `grant_required` appears); org owner/admin approval of Coworker access in the TUM Workspace.
 - Credits top-up on Preprod billing; deciding the credit budget.
-- Choosing which marketplace Agents belong to the structured/image groups.
 - Model API keys (OpenAI/Claude) and any billing on those platforms.
 - Optional payments: funding wallets with test ADA (faucet / Masumi dispenser), Blockfrost key.
 - Creating the team's GitHub repo / remote for submission; anything mainnet (never).
