@@ -56,3 +56,42 @@ export function renderStructuredContract(c){
  const notes=c.notes?`\n\nAssumptions: ${c.notes}`:'';
  return `**Deliverable:** ${c.brief}\n\n**Acceptance criteria**\n${renderCriteria(structuredCriteria(c))}${notes}`;
 }
+
+/** Numbered acceptance criteria for an image contract. Every image must pass every criterion (MVP rule). */
+export function imageCriteria(c){
+ const out=[];
+ const n=c.images.min===c.images.max?`Exactly ${c.images.min} image${c.images.min>1?'s':''}`:`Between ${c.images.min} and ${c.images.max} images`;
+ out.push(`${n}${c.images.max>1?'; every image must meet every criterion below':''}.`);
+ const t=c.technical??{};
+ if(t.formats)out.push(`Format ${t.formats.map(f=>f.toUpperCase()).join(' or ')}.`);
+ if(t.minWidth&&t.minHeight)out.push(`At least ${t.minWidth} × ${t.minHeight} pixels.`);
+ else if(t.minWidth)out.push(`At least ${t.minWidth} pixels wide.`);
+ else if(t.minHeight)out.push(`At least ${t.minHeight} pixels high.`);
+ if(t.maxBytes)out.push(`At most ${Math.round(t.maxBytes/1024)} KB.`);
+ if(t.aspectRatio)out.push(`Aspect ratio ${t.aspectRatio.value} (± ${t.aspectRatio.tolerance}).`);
+ if(c.text.mode==='exact')out.push(`The image shows exactly the text ${JSON.stringify(c.text.expected)}${c.text.caseSensitive?'':' (case-insensitive)'} (OCR tolerance ${Math.round(c.text.maxEditRatio*100)}% of characters).`);
+ else if(c.text.mode==='idea')out.push(`Text in the image conveys: ${c.text.expected} (judged by an LLM from the OCR text).`);
+ for(const o of c.objects)out.push(`Shows ${o.minCount>1?`at least ${o.minCount} × `:'a '}${q(o.label)} (detected by the object detector).`);
+ return out;
+}
+/** One-paragraph image requirements for the service Agent's input. */
+export function compactImageCriteria(c){
+ const parts=[];
+ parts.push(c.images.min===c.images.max?`${c.images.min} image${c.images.min>1?'s':''}`:`${c.images.min} to ${c.images.max} images`);
+ const t=c.technical??{};
+ if(t.formats)parts.push(t.formats.join(' or '));
+ if(t.minWidth&&t.minHeight)parts.push(`at least ${t.minWidth}x${t.minHeight} px`);
+ else if(t.minWidth)parts.push(`at least ${t.minWidth} px wide`);
+ else if(t.minHeight)parts.push(`at least ${t.minHeight} px high`);
+ if(t.maxBytes)parts.push(`max ${Math.round(t.maxBytes/1024)} KB`);
+ if(t.aspectRatio)parts.push(`aspect ratio ${t.aspectRatio.value}`);
+ if(c.text.mode==='exact')parts.push(`text exactly ${JSON.stringify(c.text.expected)}, clearly legible`);
+ else if(c.text.mode==='idea')parts.push(`legible text that conveys: ${c.text.expected}`);
+ else parts.push('no text required');
+ if(c.objects.length)parts.push(`clearly visible: ${c.objects.map(o=>o.minCount>1?`${o.minCount} ${o.label}s`:`a ${o.label}`).join(', ')}`);
+ return `${parts.join('; ')}.`;
+}
+export function renderImageContract(c){
+ const notes=c.notes?`\n\nAssumptions: ${c.notes}`:'';
+ return `**Deliverable:** ${c.brief}\n\n**Acceptance criteria**\n${renderCriteria(imageCriteria(c))}${notes}`;
+}

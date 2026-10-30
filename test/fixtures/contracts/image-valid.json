@@ -1,0 +1,5 @@
+{"kind":"image","version":1,"agentId":"local-image","brief":"Poster with the text \"SUMMER SALE -50%\" and a bicycle",
+ "technical":{"formats":["png","jpeg"],"minWidth":800},
+ "text":{"mode":"exact","expected":"SUMMER SALE -50%"},
+ "objects":[{"label":"bicycle"}],
+ "retry":{"maxAttempts":3,"maxCreditsPerHire":10},"notes":"colour unchecked"}
