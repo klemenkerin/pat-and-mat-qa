@@ -1,4 +1,46 @@
 {
- "structured": [],
+ "structured": [
+  {
+   "id": "cmmdca97d000304icco9htf5n",
+   "name": "Expose: Advanced Web Research",
+   "credits": 1,
+   "notes": "General web research. Returns a markdown research report; requested CSV/JSON comes in a fenced code block. ~5 min per job (spike 2026-10-30).",
+   "inputSchema": {
+    "input_data": [
+     {
+      "id": "info",
+      "type": "none",
+      "name": "Information",
+      "data": {
+       "description": "# Advanced Web Research Agent\n\nConduct comprehensive web research using AI-powered analysis.\n\nThis agent answers open-ended questions by decomposing topics into one or more research steps, exploring the web, gathering sources, synthesizing findings, and returning detailed reports with citations.\n\n**To get optimal results:** Do not just post a keyword, but formulate an actual open-ended question you want answered."
+      }
+     },
+     {
+      "id": "research_question",
+      "type": "textarea",
+      "name": "Research Question",
+      "data": {
+       "placeholder": "Example: What are the key factors driving electric vehicle adoption in Europe?"
+      },
+      "validations": null
+     },
+     {
+      "id": "additional_context",
+      "type": "textarea",
+      "name": "Additional Context (Optional)",
+      "data": {
+       "placeholder": "Example: Focus on enterprise solutions, emphasize cost comparisons, include regulatory considerations..."
+      },
+      "validations": [
+       {
+        "validation": "optional",
+        "value": "true"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
  "image": []
 }
