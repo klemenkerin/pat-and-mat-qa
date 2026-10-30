@@ -8,7 +8,7 @@ import {taskTarget,isTaskForTarget} from './task-target.mjs';
 import {statePath} from './state-dir.mjs';
 import {loadConfig} from './qa/config.mjs';
 const config=loadConfig();
-if(config.QA_MODE!=='template')throw new Error(`QA_MODE=${config.QA_MODE} is not implemented yet`);
+if(config.QA_MODE!=='template'){await import('./qa-worker.mjs');throw new Error('QA worker exited');}
 const target=taskTarget();
 const id=target.coworkerId;
 const releaseLock=acquireWorkerLock(statePath('worker.lock'));
