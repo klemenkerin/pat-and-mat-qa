@@ -15,3 +15,7 @@
 | 1.1 template baseline tests | pass (29/29) | 2026-10-30 | container run |
 | 1.2 account, vendor, coworker, key import | pass | 2026-10-30 | IDs above; CLI 1.1.0 required (1.0.4 personal routes return 404) |
 | 1.3 template end-to-end | pass | 2026-10-30 | baseline Task COMPLETED |
+| 0 sanity (Mac) | pass | 2026-10-30 | Node v24.22.2, CLI 1.1.0, `npm ci`, `npm test` 104/104 |
+| 2.3 live model check | pass | 2026-10-30 | `{"answer":5}`, 54 tokens; log `.local/gate-logs/gates-1-20261030-210904.log` |
+| 2.2 live read-only Sokosumi check | pass | 2026-10-30 | baseline Task: COMPLETED, 4 events, 0 jobs, actor types user+coworker |
+| 1.4 per-Coworker worker | blocked | 2026-10-30 | run 1 invalid: a leftover Gate 1.3 template worker (STATE_DIR `.local`) took Task `01a18e6e-3235-70e9-9e3d-061377b427b6` first; lock refusal check passed. Rerun after stopping it |
