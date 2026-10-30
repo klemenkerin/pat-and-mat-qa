@@ -1,0 +1,3 @@
+{"kind":"structured","version":1,"agentId":"a1","brief":"CSV of 50 EU electricity prices","output":{"format":"csv","csv":{"delimiter":","}},"records":{"exact":50},
+ "fields":[{"name":"date","type":"date","format":"yyyy-MM-dd"},{"name":"country","type":"enum","enum":["DE","AT","CH"]},{"name":"price_eur","type":"number","min":0}],
+ "unique":[["date","country"]],"retry":{"maxAttempts":3,"maxCreditsPerHire":50},"notes":"assumed comma delimiter"}
