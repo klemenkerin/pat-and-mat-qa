@@ -10,6 +10,7 @@ import {createLiveAdapter} from './qa/live.mjs';
 import {createLlm} from './qa/llm.mjs';
 import {loadCatalog} from './qa/catalog.mjs';
 import {createPipeline,TERMINAL} from './qa/pipeline.mjs';
+import {withMockHire} from './qa/mock/hire.mjs';
 
 const config=loadConfig();
 const target=taskTarget();
@@ -18,9 +19,13 @@ process.once('exit',releaseLock);
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{releaseLock();process.exit(0)});
 
 const journal=createJournal(config.STATE_DIR);
-const {api}=await createLiveAdapter({resultDir:id=>journal.taskDir(id)});
+const {api:liveApi}=await createLiveAdapter({resultDir:id=>journal.taskDir(id)});
 const llm=createLlm();
 const catalog=loadCatalog();
+// QA_HIRE_BACKEND=mock: Jobs go to the local stand-in image Agent; the Task itself stays on Sokosumi.
+const mockAgentIds=new Set([...catalog.list('structured'),...catalog.list('image')].filter(a=>a.mock).map(a=>a.id));
+const api=config.QA_HIRE_BACKEND==='mock'?withMockHire(liveApi,{dir:statePath('mock-jobs'),mockAgentIds}):liveApi;
+if(config.QA_HIRE_BACKEND==='mock')console.log(`Mock hire backend: Jobs for ${[...mockAgentIds].join(', ')||'(no mock agents)'} run locally`);
 let mode;
 if(config.QA_MODE==='structured')mode=(await import('./qa/modes/structured.mjs')).createStructuredMode({llm});
 else if(config.QA_MODE==='image')mode=(await import('./qa/modes/image.mjs')).createImageMode({llm,config});

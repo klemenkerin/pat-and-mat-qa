@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {normalise,approxSubstring,matchExact} from '../qa/validators/image/textmatch.mjs';
 import {technicalChecks} from '../qa/validators/image/metadata.mjs';
-import {ocr,terminateOcr} from '../qa/validators/image/ocr.mjs';
+import {ocr,terminateOcr,readingOrder} from '../qa/validators/image/ocr.mjs';
 import {checkText} from '../qa/validators/image/text.mjs';
 
 const fx=n=>readFileSync(new URL(`./fixtures/images/${n}`,import.meta.url));
@@ -59,4 +59,14 @@ test('idea mode passes only when the LLM says it matches with confidence >= 0.6'
  const no=await checkText({ocrResult,text:{mode:'idea',expected:'a shoe sale'},llm:judge({matches:false,confidence:0.95,reason:'about coffee'})});
  assert.equal(no.status,'fail');assert.match(no.evidence.at(-1),/LLM reason: about coffee/);
  assert.equal((await checkText({ocrResult,text:{mode:'none'}})).status,'skip');
+});
+
+test('OCR reading order: fragments of one visual line are merged left to right',()=>{
+ const w=(text,x0,y0,y1)=>({text,bbox:{x0,y0,x1:x0+10,y1}});
+ const rows=readingOrder([
+  {bbox:{y0:100,y1:140},words:[w('-50%',300,100,140)]},
+  {bbox:{y0:98,y1:142},words:[w('CAT',10,98,142),w('TOYS',120,98,142)]},
+  {bbox:{y0:10,y1:40},words:[w('Top',10,10,40)]},
+ ]);
+ assert.deepEqual(rows.map(r=>r.map(x=>x.text).join(' ')),['Top','CAT TOYS -50%']);
 });

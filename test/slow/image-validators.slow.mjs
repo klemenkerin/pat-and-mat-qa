@@ -35,3 +35,13 @@ test('real detector: two cats found, no dog',{timeout:300000},async()=>{
  const r=await run(`![p](${dataUrl('../fixtures/images/detect/coco-000000039769.jpg','image/jpeg')})`,contract);
  assert.deepEqual(status(r),{'images.count':'pass','technical.format':'pass',text:'skip','objects.cat':'pass','objects.dog':'fail','integrity.hash':status(r)['integrity.hash']},renderReportMarkdown(r));
 });
+test('stand-in poster: real OCR + detector pass the rehire prompt, fail the sloppy first one',{timeout:300000},async()=>{
+ const {renderStandinImage}=await import('../../qa/mock/image-standin.mjs');
+ const contract={...base,brief:'Cat toy poster',technical:{formats:['png'],minWidth:1000},text:{mode:'exact',expected:'CAT TOYS -50%'},objects:[{label:'cat',minCount:2}]};
+ const req='Cat toy poster\n\nHard requirements (checked automatically):\n1 image; png; at least 1000 px wide; text exactly "CAT TOYS -50%", clearly legible; clearly visible: 2 cats.';
+ const png=async p=>`![p](data:image/png;base64,${(await renderStandinImage(p)).buffer.toString('base64')})`;
+ const first=await run(await png(req),contract);
+ assert.deepEqual(first.checks.filter(x=>x.status==='fail').map(x=>x.id),['text'],renderReportMarkdown(first));
+ const second=await run(await png(`${req}\n\nYour previous attempt was rejected. Fix ALL of these issues:\n- Text must read exactly "CAT TOYS -50%"; found "CAT TOYS 50".`),contract);
+ assert.equal(second.verdict,'pass',renderReportMarkdown(second));
+});

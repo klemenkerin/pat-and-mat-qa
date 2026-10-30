@@ -46,5 +46,31 @@
    }
   }
  ],
- "image": []
+ "image": [
+  {
+   "id": "local-image-standin",
+   "name": "Local stand-in image Agent (mock)",
+   "credits": 0,
+   "mock": true,
+   "notes": "Offline stand-in, hired only with QA_HIRE_BACKEND=mock. Composes one PNG/JPEG/WebP poster from rendered text plus COCO photos. Objects it can show: cat, couch, remote control, television, chair, potted plant, person, bear, bed, book, mirror, stop sign, tree, teddy bear, ski, refrigerator, oven, baseball glove, helmet, tennis racket.",
+   "inputSchema": {
+    "input_data": [
+     {
+      "id": "prompt",
+      "type": "textarea",
+      "name": "Image prompt",
+      "data": {
+       "description": "What the image should show, including any text to render"
+      },
+      "validations": [
+       {
+        "validation": "max",
+        "value": "4000"
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
 }
