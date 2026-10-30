@@ -101,7 +101,7 @@ comments.mjs, paid-task.mjs   template, changed only to use statePath(). paid-ta
 qa/config.mjs         Zod-validated env: QA_MODE, COWORKER_ID, QA_MAX_ATTEMPTS_DEFAULT=3, QA_MAX_CREDITS_PER_HIRE_DEFAULT=50,
                       QA_JOB_POLL_SECONDS=12 (min 10), QA_JOB_TIMEOUT_MINUTES=30, QA_APPROVAL_TIMEOUT_MINUTES=60,
                       QA_MAX_REVISION_ROUNDS=3, QA_STOP_AFTER (phase name, for live gates), QA_HIRE_BACKEND=sokosumi|mock
-                      (mock NOT implemented yet), DETECTOR_MODEL, DETECTOR_DTYPE=q8, DETECTOR_THRESHOLD=0.3, OCR_LANG=eng,
+                      (mock = local stand-in image Agent, qa/mock/), DETECTOR_MODEL, DETECTOR_DTYPE=q8, DETECTOR_THRESHOLD=0.3, OCR_LANG=eng,
                       OCR_EXACT_MAX_EDIT_RATIO=0.05. Blank env values = defaults.
 qa/journal.mjs        Atomic JSON journal per task: ${STATE_DIR}/qa-<taskId>.json; artefacts in ${STATE_DIR}/qa-<taskId>/attempt-N/.
 qa/pipeline.mjs       The QA state machine (see §4.3). All side effects via injected deps → fully unit-tested with fakes.
