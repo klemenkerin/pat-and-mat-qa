@@ -56,9 +56,9 @@ test('image mode + mock hire: attempt 1 fails on the text (real OCR), the rehire
  assert.equal(r2.verdict,'pass',mode.renderReport(r2));
  assert.equal(r2.images[0].width,1200);
  const result=mode.renderResult({contract,attempts:[{n:1,report:r1,refund:await api.requestRefund()},{n:2,report:r2,jobId:'mock-2'}],agent});
- assert.match(result,/^QA PASSED\. Local stand-in image Agent \(mock\) \(local stand-in image Agent, mock hire: no payment\)/);
+ assert.match(result,/^QA PASSED\. Local stand-in image Agent \(mock\) \(mock hire: no payment\)/);
  assert.match(result,/Attempts: #1 fail \(refund skipped\), #2 pass/);
  assert.doesNotMatch(result,/base64/);
- assert.deepEqual((await api.listTaskJobs('task-1')).map(j=>[j.name,j.status]),[['QA attempt 1','completed'],['QA attempt 2','completed']].sort((a,b)=>0));
+ assert.deepEqual((await api.listTaskJobs('task-1')).map(j=>[j.name,j.status]).sort(),[['QA attempt 1','completed'],['QA attempt 2','completed']]);
  await assert.rejects(api.hire('task-1',{agentId:'real-agent',inputData:{prompt:'x'},name:'n'}),/only hires local stand-in agents/);
 });

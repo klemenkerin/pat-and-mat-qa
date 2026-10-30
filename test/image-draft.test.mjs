@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {quotedTexts,singularize,postProcessImage,draftImageContract,reviseImageContract} from '../qa/contract/image-draft.mjs';
+import {quotedTexts,singularize,postProcessImage,draftImageContract,reviseImageContract,groundTechnical} from '../qa/contract/image-draft.mjs';
 import {createLlm} from '../qa/llm.mjs';
 
 const scripted=answers=>{let i=0;return createLlm({generate:async()=>({text:JSON.stringify(answers[i++])})});};
@@ -54,4 +54,18 @@ test('scenery is not an object; placeholder notes are dropped',()=>{
  const c=postProcessImage({text:{mode:'none'},objects:[{label:'dogs',minCount:2},{label:'beach'}],notes:'<your assumptions; omit if none>'},'Photo of two dogs on a beach');
  assert.deepEqual(c.objects,[{label:'dog',minCount:2}]);
  assert.equal(c.notes,'"beach" is scenery, not checked as an object.');
+});
+
+test('(d) technical limits must be stated: the live 1024×768 / 5 MB drift is removed (Task 01a18ed2)',async()=>{
+ const brief='Poster for a cat shelter with the text "ADOPT A CAT TODAY" and a cat. PNG, at least 1000 px wide.';
+ const drifted={formats:['png','jpeg'],minWidth:1024,minHeight:768,maxBytes:5000000,aspectRatio:{value:1.7778,tolerance:0.02}};
+ assert.deepEqual(groundTechnical(drifted,brief),{formats:['png']});
+ assert.deepEqual(groundTechnical({...drifted,minWidth:1000},brief),{formats:['png'],minWidth:1000});
+ assert.deepEqual(groundTechnical({minWidth:1920,minHeight:1080,maxBytes:2097152,aspectRatio:{value:1.7778,tolerance:0.02}},'A 1920x1080 banner, 16:9, max 2 MB'),
+  {minWidth:1920,minHeight:1080,maxBytes:2097152,aspectRatio:{value:1.7778,tolerance:0.02}});
+ // Revision: earlier limits survive unless the comment removes them.
+ const previous={formats:['png'],minWidth:1000,maxBytes:5000000};
+ const comment='No minimum height and no file size limit.';
+ assert.deepEqual(groundTechnical({formats:['png'],minWidth:1000,minHeight:768,maxBytes:5000000},`${brief}\n${comment}`,{previous,comment}),{formats:['png'],minWidth:1000});
+ assert.deepEqual(groundTechnical({formats:['png'],minWidth:1000,maxBytes:5000000},'Make the text red.',{previous,comment:'Make the text red.'}),previous);
 });

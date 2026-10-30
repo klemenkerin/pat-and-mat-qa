@@ -44,7 +44,7 @@ export function createImageMode({llm,config,ocrFn,detectFn,fetchImpl=fetch}){
    // Image links and hashes only: the result must stay small, so no image bytes.
    const imgs=(last.report.images??[]).map(i=>`- Image ${i.k}: ${i.width}×${i.height} ${String(i.format).toUpperCase()}, ${Math.round(i.bytes/1024)} KB, sha256 \`${i.sha256}\`, ${/^https?:/.test(i.url)?i.url:`${i.origin}${i.name?` ${i.name}`:''} of job ${last.jobId}`}`).join('\n');
    const history=attempts.length>1?`\n\nAttempts: ${attempts.map(a=>`#${a.n} ${a.report?.verdict??'n/a'}${a.refund?` (refund ${a.refund.status})`:''}`).join(', ')}.`:'';
-   const mock=agent.mock?' (local stand-in image Agent, mock hire: no payment)':'';
+   const mock=agent.mock?' (mock hire: no payment)':'';
    return `QA PASSED. ${agent.name}${mock} delivered images that meet every acceptance criterion (attempt ${last.n} of max ${contract.retry.maxAttempts}).${history}\n\n## Images\n\n${imgs}\n\n## QA report\n\n${renderReportMarkdown(last.report)}\n\n## Acceptance contract\n\n${renderImageContract(contract)}\n`;
   },
 

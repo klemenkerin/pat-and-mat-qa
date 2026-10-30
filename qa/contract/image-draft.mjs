@@ -41,9 +41,31 @@ export function singularize(phrase){
 
 // Scenery the detector cannot confirm as an object; dropped from objects and named in notes.
 const SCENERY=new Set(['beach','sky','background','scene','landscape','sea','ocean','water','street','city','room','ground','floor','wall','field','forest','park']);
-/** Deterministic rules on top of the LLM draft (plan Step 4.3 a–c). */
-export function postProcessImage(contract,brief){
+const FORMAT_WORDS={png:/\bpng\b/i,jpeg:/\bjpe?g\b/i,webp:/\bwebp\b/i};
+const NEGATIONS=[['maxBytes',/\bno\s+(?:max(?:imum)?\s+)?(?:file\s+)?size\s+(?:limit|cap|restriction)/i],['minHeight',/\bno\s+min(?:imum)?\s+height/i],
+ ['minWidth',/\bno\s+min(?:imum)?\s+width/i],['aspectRatio',/\bno\s+(?:fixed\s+)?aspect\s+ratio/i],['formats',/\b(?:any|no\s+(?:specific\s+)?)\s*format\b/i]];
+/**
+ (d) Technical limits must be grounded: live drafts copied the example values from SHAPE_IMAGE (1024×768, 5 MB)
+ into a brief that only said "at least 1000 px wide" (Task 01a18ed2, 2026-10-30). A limit stays only when `source`
+ states it (or `previous` already had it); "no file size limit" in a revision comment removes one.
+*/
+export function groundTechnical(technical,source,{previous={},comment=''}={}){
+ const t={...(technical??{})};
+ const text=String(source);
+ const said=n=>new RegExp(`(?<![\\d.])${n}(?![\\d])`).test(text);
+ const kept=(k,v)=>JSON.stringify(previous[k])===JSON.stringify(v);
+ if(t.formats){const named=Object.keys(FORMAT_WORDS).filter(f=>FORMAT_WORDS[f].test(text));t.formats=named.length?t.formats.filter(f=>named.includes(f)):kept('formats',t.formats)?t.formats:[];if(!t.formats.length)delete t.formats;}
+ for(const k of ['minWidth','minHeight'])if(t[k]!==undefined&&!said(t[k])&&!kept(k,t[k]))delete t[k];
+ if(t.maxBytes!==undefined&&!/\b\d+(?:[.,]\d+)?\s*(?:kb|mb|kib|mib|bytes)\b/i.test(text)&&!kept('maxBytes',t.maxBytes))delete t.maxBytes;
+ if(t.aspectRatio&&!/aspect|\b\d+\s*:\s*\d+\b|square|landscape|portrait/i.test(text)&&!kept('aspectRatio',t.aspectRatio))delete t.aspectRatio;
+ for(const [k,re] of NEGATIONS)if(re.test(comment))delete t[k];
+ return t;
+}
+
+/** Deterministic rules on top of the LLM draft (plan Step 4.3 a–d). */
+export function postProcessImage(contract,brief,{techSource=brief,previous,comment}={}){
  const c=structuredClone(contract);
+ c.technical=groundTechnical(c.technical,techSource,{previous,comment});
  const quotes=quotedTexts(brief);
  const notes=c.notes?[c.notes]:[];
  if(quotes.length){
@@ -69,10 +91,10 @@ export function postProcessImage(contract,brief){
  return c;
 }
 
-function imageContractWith(fixed,quoteSource=fixed.brief){
+function imageContractWith(fixed,quoteSource=fixed.brief,tech={}){
  return z.any().transform((o,ctx)=>{
   const base=o&&typeof o==='object'?o:{};
-  const r=imageContractSchema.safeParse(postProcessImage({...base,...fixed,text:base.text??{mode:'none'}},quoteSource));
+  const r=imageContractSchema.safeParse(postProcessImage({...base,...fixed,text:base.text??{mode:'none'}},quoteSource,{techSource:fixed.brief,...tech}));
   if(!r.success){for(const i of r.error.issues)ctx.addIssue({code:'custom',message:i.message,path:i.path});return z.NEVER;}
   return r.data;
  });
@@ -90,5 +112,5 @@ export async function reviseImageContract({llm,contract,comment}){
  return llm.generateJson({system:`${SYSTEM_DRAFT_IMAGE}\nYou now revise an existing contract: apply the customer's requested changes and change nothing else.`,
   prompt:`Current contract:\n${JSON.stringify(contract,null,1)}\n\nCustomer's requested changes:\n"""\n${comment}\n"""\n\nReturn the full updated contract JSON.`,
   // Quotes in the change request replace the text; otherwise the brief's quotes still apply.
-  schema:imageContractWith({kind,version,agentId,brief,retry},quotedTexts(comment).length?comment:brief)});
+  schema:imageContractWith({kind,version,agentId,brief,retry},quotedTexts(comment).length?comment:brief,{techSource:`${brief}\n${comment}`,previous:contract.technical??{},comment})});
 }
