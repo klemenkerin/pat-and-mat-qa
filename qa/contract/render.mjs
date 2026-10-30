@@ -25,6 +25,32 @@ export function structuredCriteria(c){
  for(const key of c.unique??[])out.push(`No duplicate ${key.length>1?'combinations of ':''}${key.map(q).join(' + ')}.`);
  return out;
 }
+/** One-paragraph criteria for the service Agent's input, where space is limited. Same requirements as structuredCriteria. */
+export function compactCriteria(c){
+ const parts=[];
+ const unit=c.output.format==='csv'?'rows':'records';
+ if(c.output.format==='csv'){const d=c.output.csv?.delimiter??',';parts.push(`CSV, delimiter ${d==='\t'?'tab':`"${d}"`}, ${(c.output.csv?.header??true)?'with header row':'no header row'}`);}
+ else parts.push(`valid JSON${c.output.json?.recordsPath?`, records array at ${c.output.json.recordsPath}`:c.output.json?.root==='object'?' object':' array of records'}`);
+ const r=c.records;
+ if(r?.exact!==undefined)parts.push(`exactly ${r.exact} ${unit}`);
+ else if(r?.min!==undefined&&r?.max!==undefined)parts.push(`${r.min} to ${r.max} ${unit}`);
+ else if(r?.min!==undefined)parts.push(`at least ${r.min} ${unit}`);
+ else if(r?.max!==undefined)parts.push(`at most ${r.max} ${unit}`);
+ const field=f=>{
+  const x=[f.type];
+  if(f.format)x.push(f.format);
+  if(f.enum)x.push(`one of ${f.enum.join(', ')}`);
+  if(f.min!==undefined)x.push(`>= ${f.min}`);
+  if(f.max!==undefined)x.push(`<= ${f.max}`);
+  if(f.pattern)x.push(`matches /${f.pattern}/`);
+  if(!f.required)x.push('optional');else if(f.maxNullRate>0)x.push(`max ${Math.round(f.maxNullRate*100)}% empty`);
+  return `${f.name} (${x.join(', ')})`;
+ };
+ parts.push(`${c.allowExtraFields?'columns':'only columns'}: ${c.fields.map(field).join('; ')}`);
+ if(c.fields.some(f=>f.required&&!(f.maxNullRate>0)))parts.push('no empty values except where marked');
+ for(const key of c.unique??[])parts.push(`${key.join(' + ')} unique`);
+ return `${parts.join('; ')}.`;
+}
 export function renderCriteria(lines){let n=0;return lines.map(l=>l.startsWith('  - ')?`   ${l.trim()}`:`${++n}. ${l}`).join('\n');}
 export function renderStructuredContract(c){
  const notes=c.notes?`\n\nAssumptions: ${c.notes}`:'';

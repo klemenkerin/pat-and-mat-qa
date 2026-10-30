@@ -19,10 +19,23 @@ const optionValues=f=>(f.data?.values??f.data?.options??[]).map(v=>typeof v==='o
 const maxLen=f=>{const v=(f.validations??[]).find(x=>x?.validation==='max');return v?Number(v.value):undefined;};
 
 /** Brief sent to the service agent: original brief + hard requirements + fixes from failed attempts. */
-export function composeServiceBrief({brief,criteriaText,attempt,fixInstructions=[]}){
- let s=`${brief.trim()}\n\nHard requirements (your output is checked automatically against each one):\n${criteriaText.trim()}`;
- if(attempt>1&&fixInstructions.length)s+=`\n\nYour previous attempt was rejected. Fix ALL of these issues:\n${fixInstructions.map(f=>`- ${f}`).join('\n')}`;
- return s;
+export function composeServiceParts({brief,criteriaText,attempt,fixInstructions=[]}){
+ let requirements=`Hard requirements (checked automatically):\n${criteriaText.trim()}`;
+ if(attempt>1&&fixInstructions.length)requirements+=`\n\nYour previous attempt was rejected. Fix ALL of these issues:\n${fixInstructions.map(f=>`- ${f}`).join('\n')}`;
+ return {brief:brief.trim(),requirements};
+}
+export function composeServiceBrief(o){const p=composeServiceParts(o);return `${p.brief}\n\n${p.requirements}`;}
+
+/**
+ Copy of the schema with extra per-field length limits (from config/agents.json `fieldMaxLength`).
+ Some Agents enforce limits their form does not declare (Advanced Web Research: start_job fails above 500 chars).
+ Only used to build and check inputData; the hire still sends the Agent's schema unchanged.
+*/
+export function withFieldLimits(inputSchema,limits){
+ if(!limits||!Object.keys(limits).length)return inputSchema;
+ const copy=structuredClone(inputSchema);
+ for(const f of schemaFields(copy))if(limits[f.id]!==undefined)f.validations=[...(f.validations??[]).filter(v=>v?.validation!=='max'),{validation:'max',value:String(limits[f.id])}];
+ return copy;
 }
 
 /** Check inputData against the agent's schema; returns a list of problems (empty = ok). */
@@ -49,7 +62,7 @@ export function validateInputData(inputSchema,inputData){
  Map the service brief onto the agent's input form.
  Deterministic when the form has one obvious free-text field; otherwise the LLM maps it and code validates.
 */
-export async function buildInputData({inputSchema,serviceBrief,llm}){
+export async function buildInputData({inputSchema,serviceBrief,parts,llm}){
  const fields=schemaFields(inputSchema).filter(f=>!SKIP.has(f.type));
  if(!fields.length)throw new Error('The agent input schema has no fields');
  const texts=fields.filter(f=>TEXT.has(f.type));
@@ -57,8 +70,14 @@ export async function buildInputData({inputSchema,serviceBrief,llm}){
  const otherRequired=fields.filter(f=>!TEXT.has(f.type)&&f.type!=='hidden'&&!isOptional(f));
  const main=texts.length===1?texts[0]:texts.find(f=>PREFERRED.test(f.id)||PREFERRED.test(f.name??''));
  if(main&&!otherRequired.length&&texts.filter(f=>f!==main&&!isOptional(f)).length===0){
-  const data={...hidden,[main.id]:serviceBrief};
-  const m=maxLen(main);if(m&&serviceBrief.length>m)throw new Error(`The brief (${serviceBrief.length} chars) exceeds the ${main.id} limit of ${m} characters`);
+  let data={...hidden,[main.id]:serviceBrief};
+  const m=maxLen(main);
+  if(m&&serviceBrief.length>m){
+   // Too long for one field: brief in the main field, requirements and fixes in an optional second text field.
+   const extra=parts&&texts.find(f=>f!==main&&isOptional(f));
+   if(!extra)throw new Error(`The brief (${serviceBrief.length} chars) exceeds the ${main.id} limit of ${m} characters`);
+   data={...hidden,[main.id]:parts.brief,[extra.id]:parts.requirements};
+  }
   const p=validateInputData(inputSchema,data);if(p.length)throw new Error(p.join('; '));
   return data;
  }

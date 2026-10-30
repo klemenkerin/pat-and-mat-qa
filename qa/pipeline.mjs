@@ -145,7 +145,7 @@ export function createPipeline({deps,config}){
     const orphan=(await api.listTaskJobs(s.taskId)).find(j=>j.name===name&&!known.has(j.id));
     if(orphan)return transition(updateAttempt(s,a.n,{jobId:orphan.id,hiredAt:now(),reconciled:true}),'job-polling',{},now(),'adopted existing job');
     let inputData;
-    try{inputData=await mode.buildInputData({inputSchema:s.inputSchema,contract:s.contract,attempt:a.n,fixInstructions:a.fixInstructions});}
+    try{inputData=await mode.buildInputData({inputSchema:s.inputSchema,contract:s.contract,attempt:a.n,fixInstructions:a.fixInstructions,agent:s.agent});}
     catch(e){return fail(s,`Cannot build input for agent ${s.agent.name}: ${short(e)}`);}
     s=updateAttempt(s,a.n,{inputData});journal.save(s);
     let job;

@@ -1,0 +1,55 @@
+{
+ "kind": "structured",
+ "version": 1,
+ "agentId": "cmmdca97d000304icco9htf5n",
+ "brief": "CSV of the closing prices of the DAX, CAC 40 and FTSE 100 indices for the last 5 trading days, with columns date (YYYY-MM-DD), index (DAX, CAC40 or FTSE100) and close (number). 15 rows.",
+ "output": {
+  "format": "csv",
+  "source": "auto",
+  "csv": {
+   "delimiter": ",",
+   "header": true
+  }
+ },
+ "records": {
+  "exact": 15
+ },
+ "fields": [
+  {
+   "name": "date",
+   "type": "date",
+   "required": true,
+   "format": "yyyy-MM-dd",
+   "maxNullRate": 0
+  },
+  {
+   "name": "index",
+   "type": "enum",
+   "required": true,
+   "enum": [
+    "DAX",
+    "CAC40",
+    "FTSE100"
+   ],
+   "maxNullRate": 0
+  },
+  {
+   "name": "close",
+   "type": "number",
+   "required": true,
+   "maxNullRate": 0
+  }
+ ],
+ "unique": [
+  [
+   "date",
+   "index"
+  ]
+ ],
+ "allowExtraFields": false,
+ "retry": {
+  "maxAttempts": 3,
+  "maxCreditsPerHire": 20
+ },
+ "notes": "Assume 'last 5 trading days' means the most recent 5 weekdays/days with market close for these major European indices, based on the agent's web research at runtime. Assume 'closing prices' refers to the official index close level. Use CSV delimiter ',' with a header row. Column name is exactly 'index' with values DAX, CAC40, FTSE100."
+}

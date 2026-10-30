@@ -56,7 +56,7 @@ test('buildInputData puts brief + criteria (+ fixes on retry) into the prompt fi
  const base=JSON.parse(readFileSync(new URL('./fixtures/contracts/structured-valid.json',import.meta.url)));
  const mode=createStructuredMode({llm:createLlm({generate:async()=>{throw new Error('no llm');}})});
  const d1=await mode.buildInputData({inputSchema:schema,contract:base,attempt:1,fixInstructions:[]});
- assert.match(d1.prompt,/Exactly 50 records/);
+ assert.match(d1.prompt,/exactly 50 rows/);
  const d2=await mode.buildInputData({inputSchema:schema,contract:base,attempt:2,fixInstructions:['Return exactly 50 records (you returned 38).']});
  assert.match(d2.prompt,/you returned 38/);
 });
@@ -71,4 +71,18 @@ test('verify + renderResult on a passing wrapped CSV',async()=>{
  assert.match(text,/^QA PASSED/);
  assert.match(text,/```csv\ndate,country,price_eur\n2026-10-01,DE,50\.00/);
  assert.ok(Buffer.byteLength(text)<1024*1024);
+});
+
+test('live Gate 3.4 contract fits the real Advanced Web Research form (500-char cap) on every attempt',async()=>{
+ const contract=JSON.parse(readFileSync(new URL('./fixtures/contracts/live-dax-cac-ftse.json',import.meta.url),'utf8'));
+ const agent=JSON.parse(readFileSync(new URL('../config/agents.json',import.meta.url),'utf8')).structured[0];
+ const mode=createStructuredMode({llm:{generateJson:async()=>{throw new Error('LLM not expected');}}});
+ const first=await mode.buildInputData({inputSchema:agent.inputSchema,contract,attempt:1,fixInstructions:[],agent});
+ assert.deepEqual(Object.keys(first),['research_question']);
+ assert.ok(first.research_question.length<=500,`${first.research_question.length} chars`);
+ for(const s of ['exactly 15 rows','date (date, yyyy-MM-dd)','index (enum, one of DAX, CAC40, FTSE100)','close (number','date + index unique'])assert.ok(first.research_question.includes(s),s);
+ const fixes=['Column `date`: 3 of 15 values are not in format yyyy-MM-dd, e.g. row 4: 28.10.2026.','Expected exactly 15 records; found 12.'];
+ const retry=await mode.buildInputData({inputSchema:agent.inputSchema,contract,attempt:2,fixInstructions:fixes,agent});
+ assert.ok(Object.values(retry).every(v=>v.length<=500));
+ assert.ok(Object.values(retry).join('\n').includes(fixes[0])&&Object.values(retry).join('\n').includes(fixes[1]));
 });

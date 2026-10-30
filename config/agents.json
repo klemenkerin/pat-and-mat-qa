@@ -4,7 +4,11 @@
    "id": "cmmdca97d000304icco9htf5n",
    "name": "Expose: Advanced Web Research",
    "credits": 1,
-   "notes": "General web research. Returns a markdown research report; requested CSV/JSON comes in a fenced code block. ~5 min per job (spike 2026-10-30).",
+   "notes": "General web research. Returns a markdown research report; requested CSV/JSON comes in a fenced code block. ~5 min per job (spike 2026-10-30). Input above 500 chars per text field makes start_job fail (Core 422), limit not declared in its form (measured 2026-10-30: 500 ok, 544 fails); additional_context limit assumed the same.",
+   "fieldMaxLength": {
+    "research_question": 500,
+    "additional_context": 500
+   },
    "inputSchema": {
     "input_data": [
      {

@@ -2,9 +2,9 @@ import {z} from 'zod';
 import {readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {structuredContractSchema} from '../contract/structured.mjs';
-import {renderStructuredContract,structuredCriteria,renderCriteria} from '../contract/render.mjs';
+import {renderStructuredContract,compactCriteria} from '../contract/render.mjs';
 import {parseQaRequest} from '../request.mjs';
-import {composeServiceBrief,buildInputData,schemaFields} from '../hire.mjs';
+import {composeServiceParts,buildInputData,schemaFields,withFieldLimits} from '../hire.mjs';
 import {extractStructured} from '../extract.mjs';
 import {validateStructured} from '../validators/structured/index.mjs';
 import {buildReport,renderReportMarkdown,fixInstructions} from '../report.mjs';
@@ -97,9 +97,10 @@ export function createStructuredMode({llm,fetchImpl=fetch}){
 
   renderContract:renderStructuredContract,
 
-  async buildInputData({inputSchema,contract,attempt,fixInstructions:fixes}){
-   const serviceBrief=composeServiceBrief({brief:contract.brief,criteriaText:renderCriteria(structuredCriteria(contract)),attempt,fixInstructions:fixes});
-   return buildInputData({inputSchema,serviceBrief,llm});
+  async buildInputData({inputSchema,contract,attempt,fixInstructions:fixes,agent}){
+   // Compact criteria: Agents may cap their input (see withFieldLimits). The customer still sees the numbered list.
+   const parts=composeServiceParts({brief:contract.brief,criteriaText:compactCriteria(contract),attempt,fixInstructions:fixes});
+   return buildInputData({inputSchema:withFieldLimits(inputSchema,agent?.fieldMaxLength),serviceBrief:`${parts.brief}\n\n${parts.requirements}`,parts,llm});
   },
 
   async verify({job,files,links,contract,attempt,workDir}){
