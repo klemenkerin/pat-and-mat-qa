@@ -4,7 +4,7 @@
 |---|---|---|
 | Vendor "Green Dragons" (slug `your-team-qa`) | `01a18e31-8ed8-75b8-b2e5-e1e71eb3c5a8` | created 2026-10-30 |
 | Coworker "Pat - Structured data QA" (slug `pat-structured-data-qa`) | `01a18e40-3f26-743b-b191-e710204e055f` | capability `tasks`, personal access |
-| Coworker: QA · Images | | Part 4 |
+| Coworker "Iris - Image QA" (slug `iris-image-qa`) | `01a18eb7-c523-7195-a1e5-238f76defa8b` | capability `tasks`, personal access GRANTED; key in CLI vault (2026-10-30) |
 | TUM organization ID / slug | | Step 3.9 |
 | Structured Agent (primary) "Expose: Advanced Web Research" | `cmmdca97d000304icco9htf5n` | 1 credit per hire (PAID); spiked OK 2026-10-30 |
 | Structured Agent (backup) "Ask the Crowd: Survey (Bansumi)" | `cmnr6sr2l000d04jyi3hl3lrj` | input-schema returns 422: probably not hireable |
@@ -29,3 +29,4 @@
 | 3.8 #1 happy E2E (live) | pass | 2026-10-30 | Task `01a18e9b-9fa1-72e5-91f9-194fac885e3f` COMPLETED: result = verdict + CSV + QA report (docs/demo.md) |
 | 3.8 crash/restart (live) | pass | 2026-10-30 | Task `01a18ea3-3294-7133-a9fb-ff6734dc6a90`: worker killed in job-polling (attempt 1, Job `01a18ea3-7b77-76a2-9549-fc147dba6f0f`), restarted 21:07Z; resumed polling the same Job, remote Task still has exactly 1 Job |
 | 3.7 retry loop (live) | pass | 2026-10-30 | Task `01a18ea9-a005-707c-9e22-1ea7f4b3afa3`: attempt 1 (9 of 60 rows) failed → refund requested (`refund_pending`) → rebrief split over two fields → attempt 2 passed → COMPLETED; both Jobs under the Task. First try `01a18ea3-3294-7133-a9fb-ff6734dc6a90` passed on attempt 1, so no retry there |
+| 4.1 second Coworker + parallel workers | pass | 2026-10-30 | Iris baseline Task `01a18eb8-6189-73dc-9a90-c62ae82b89ad` COMPLETED in template mode while `worker:structured` ran; journals/locks in `.local/image/` and `.local/structured/` |
