@@ -13,9 +13,9 @@ const schema=z.object({
  QA_MAX_REVISION_ROUNDS:int(3,0,10),
  QA_STOP_AFTER:z.string().trim().optional().transform(v=>v||undefined),
  QA_HIRE_BACKEND:z.enum(['sokosumi','mock']).default('sokosumi'),
- DETECTOR_MODEL:z.string().trim().min(1).default('onnx-community/grounding-dino-tiny-ONNX'),
+ DETECTOR_MODEL:z.string().trim().min(1).default('Xenova/owlv2-base-patch16'),   // chosen by the Step 4.6 benchmark (docs/detector-choice.md)
  DETECTOR_DTYPE:z.enum(['fp32','fp16','q8','int8','uint8','q4','q4f16','bnb4']).default('q8'),
- DETECTOR_THRESHOLD:num(0.3),
+ DETECTOR_THRESHOLD:num(0.15),
  OCR_LANG:z.string().trim().min(1).default('eng'),
  OCR_EXACT_MAX_EDIT_RATIO:num(0.05,0,0.5),
 });

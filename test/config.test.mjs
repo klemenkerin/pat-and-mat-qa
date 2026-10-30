@@ -5,7 +5,7 @@ import {stateDir,statePath} from '../state-dir.mjs';
 test('defaults keep template behaviour',()=>{
  const c=loadConfig({COWORKER_ID:'cw_1'});
  assert.equal(c.QA_MODE,'template');assert.equal(c.STATE_DIR,'.local');assert.equal(c.QA_MAX_ATTEMPTS_DEFAULT,3);
- assert.equal(c.QA_JOB_POLL_SECONDS,12);assert.equal(c.DETECTOR_MODEL,'onnx-community/grounding-dino-tiny-ONNX');assert.equal(c.OCR_EXACT_MAX_EDIT_RATIO,0.05);
+ assert.equal(c.QA_JOB_POLL_SECONDS,12);assert.equal(c.DETECTOR_MODEL,'Xenova/owlv2-base-patch16');assert.equal(c.DETECTOR_THRESHOLD,0.15);assert.equal(c.OCR_EXACT_MAX_EDIT_RATIO,0.05);
 });
 test('blank values fall back to defaults',()=>{assert.equal(loadConfig({COWORKER_ID:'cw',QA_MODE:'',STATE_DIR:''}).QA_MODE,'template');});
 test('rejects invalid mode',()=>assert.throws(()=>loadConfig({COWORKER_ID:'cw',QA_MODE:'video'}),/QA_MODE/));

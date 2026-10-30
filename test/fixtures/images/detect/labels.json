@@ -1,0 +1,13 @@
+{
+ "_source": "COCO val2017 (images.cocodataset.org). Labelled by hand by looking at each image: present = clearly visible; absent = plausible distractor not in the image. counts = minimum clearly visible instances.",
+ "coco-000000039769.jpg": {"present": ["cat", "remote control", "couch"], "absent": ["dog", "laptop", "book"], "counts": {"cat": 2}},
+ "coco-000000000139.jpg": {"present": ["television", "chair", "potted plant", "person"], "absent": ["dog", "bicycle", "bed"]},
+ "coco-000000000285.jpg": {"present": ["bear"], "absent": ["dog", "cat", "person"]},
+ "coco-000000000632.jpg": {"present": ["bed", "book", "potted plant", "mirror"], "absent": ["television", "person", "dog"]},
+ "coco-000000000724.jpg": {"present": ["stop sign", "tree"], "absent": ["person", "bicycle", "dog"]},
+ "coco-000000000776.jpg": {"present": ["teddy bear"], "absent": ["dog", "cat", "person"], "counts": {"teddy bear": 3}},
+ "coco-000000000785.jpg": {"present": ["person", "ski", "ski pole"], "absent": ["dog", "bicycle", "car"]},
+ "coco-000000000802.jpg": {"present": ["refrigerator", "oven"], "absent": ["person", "television", "dog"]},
+ "coco-000000000872.jpg": {"present": ["person", "baseball glove", "helmet"], "absent": ["dog", "car", "bicycle"], "counts": {"person": 2}},
+ "coco-000000000885.jpg": {"present": ["person", "tennis racket"], "absent": ["dog", "car", "bicycle"]}
+}
