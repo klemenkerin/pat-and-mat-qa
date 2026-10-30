@@ -39,18 +39,21 @@ export function createSokosumiAdapter({client,runtime,target,cli=runCli,resultDi
   async getJobFiles(jobId){return list(await client.get(`/v1/jobs/${enc(jobId)}/files`));},
   async getJobLinks(jobId){return list(await client.get(`/v1/jobs/${enc(jobId)}/links`));},
   async requestRefund(task,jobId){
+   // Core's Task payload names the owner `userId` (verified on Preprod); `ownerId` is accepted for older shapes.
+   const owner=task.ownerId??task.userId;
+   if(!owner)return {status:'failed',detail:'Task has no owner id; cannot send X-Context-User-Id'};
    try{
     let body;
     if(task.organizationId){
      // CLI 1.0.4's client cannot send X-Context-Organization-Id, so call Core directly.
      const key=runtime.readRuntimeCredential(id);
      const res=await fetchImpl(`${PREPROD_API_URL}/v1/jobs/${enc(jobId)}/refund`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(30000),
-      headers:{Accept:'application/json',Authorization:`Bearer ${key}`,'X-Context-User-Id':task.ownerId,'X-Context-Organization-Id':task.organizationId}});
+      headers:{Accept:'application/json',Authorization:`Bearer ${key}`,'X-Context-User-Id':owner,'X-Context-Organization-Id':task.organizationId}});
      const text=await res.text();
      body=text?JSON.parse(text):undefined;
      if(!res.ok)throw Object.assign(new Error(`Core API request failed with status ${res.status}`),{status:res.status,body});
     }else{
-     const ctx=runtime.createCoworkerHttpClient({apiKey:runtime.readRuntimeCredential(id),contextUserId:task.ownerId});
+     const ctx=runtime.createCoworkerHttpClient({apiKey:runtime.readRuntimeCredential(id),contextUserId:owner});
      body=await ctx.post(`/v1/jobs/${enc(jobId)}/refund`);
     }
     return {status:'requested',detail:data(body)?.status??'refund requested'};

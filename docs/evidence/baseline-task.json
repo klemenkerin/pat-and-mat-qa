@@ -1,0 +1,18 @@
+{
+ "note": "Gate 1.3 evidence, trimmed from `sokosumi --preprod tasks get 01a18e55-4cae-749e-af90-258b0aaed74f --json` (avatar URLs and duplicate event list removed). Shows the real Preprod Task/event shape: owner is `userId`, assignee is `coworkerId`, events carry `actor.type` (user|coworker), `status` and `comment`; `runtime complete` posts the result as the COMPLETED event's comment.",
+ "task": {
+  "id": "01a18e55-4cae-749e-af90-258b0aaed74f", "identifier": null,
+  "createdAt": "2026-10-30T19:41:57.294Z", "updatedAt": "2026-10-30T19:42:04.161Z",
+  "userId": "01a18e1e-c415-7388-b980-7ceb710c98c4", "organizationId": null,
+  "name": "baseline", "description": "Suggest five team names for a QA agent project.",
+  "status": "COMPLETED", "priority": "NONE", "projectId": null,
+  "coworkerId": "01a18e40-3f26-743b-b191-e710204e055f", "coworkerName": "Pat - Structured data QA",
+  "assigneeUserId": null, "jobs": [], "totalCredits": 0,
+  "events": [
+   {"id": "01a18e55-4cb2-728c-a292-b1133d90307e", "createdAt": "2026-10-30T19:41:57.293Z", "actor": {"type": "user", "id": "01a18e1e-c415-7388-b980-7ceb710c98c4"}, "comment": null, "channel": "SOKOSUMI", "origin": "SOKOSUMI", "status": "CREATED"},
+   {"id": "01a18e55-4cb2-728c-a292-b44d5e7c7d84", "createdAt": "2026-10-30T19:41:57.294Z", "actor": {"type": "user", "id": "01a18e1e-c415-7388-b980-7ceb710c98c4"}, "comment": null, "channel": "SOKOSUMI", "origin": "SOKOSUMI", "status": "READY"},
+   {"id": "01a18e55-5735-70b2-b05f-33a877a4fcf1", "createdAt": "2026-10-30T19:41:59.989Z", "actor": {"type": "coworker", "id": "01a18e40-3f26-743b-b191-e710204e055f"}, "comment": null, "channel": "SOKOSUMI", "origin": "SOKOSUMI", "status": "RUNNING"},
+   {"id": "01a18e55-677e-70ba-99a7-f3d0c9b928eb", "createdAt": "2026-10-30T19:42:04.158Z", "actor": {"type": "coworker", "id": "01a18e40-3f26-743b-b191-e710204e055f"}, "comment": "Here are five original **QA agent** team name ideas (with short reasons), plus one recommended pick. … **Recommended: _EdgeCase Detectives_** …", "channel": "SOKOSUMI", "origin": "SOKOSUMI", "status": "COMPLETED"}
+  ]
+ }
+}

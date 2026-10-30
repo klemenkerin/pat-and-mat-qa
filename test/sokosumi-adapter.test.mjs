@@ -73,6 +73,14 @@ test('personal refund uses X-Context-User-Id via the CLI client',async()=>{
  assert.deepEqual(ctxCalls,[{p:'/v1/jobs/j1/refund',apiKey:'coworker_SECRETKEY',contextUserId:'u1'}]);
 });
 
+test('refund uses userId as owner (Preprod Task shape)',async()=>{
+ const {api,ctxCalls}=setup();
+ const {ownerId,...rest}=task;
+ await api.requestRefund({...rest,userId:'u9'},'j1');
+ assert.equal(ctxCalls[0].contextUserId,'u9');
+ assert.equal((await setup().api.requestRefund({id:'t1'},'j1')).status,'failed');
+});
+
 test('organization refund sends both context headers',async()=>{
  const seen=[];
  const fetchImpl=async(url,init)=>{seen.push({url,init});return {ok:true,status:200,text:async()=>JSON.stringify({data:{status:'dispute_pending'}})};};
