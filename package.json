@@ -15,10 +15,18 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.62",
+    "@huggingface/transformers": "4.3.2",
     "ai": "7.0.127",
     "csv-parse": "7.0.3",
     "eve": "0.71.0",
     "luxon": "3.7.2",
+    "sharp": "0.35.5",
+    "tesseract.js": "7.0.0",
     "zod": "4.6.5"
+  },
+  "allowScripts": {
+    "onnxruntime-node": false,
+    "protobufjs": false,
+    "tesseract.js": false
   }
 }
