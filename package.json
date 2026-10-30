@@ -9,7 +9,9 @@
     "start": "node --env-file-if-exists=.env start.mjs",
     "worker": "node --env-file-if-exists=.env worker.mjs",
     "api": "node --env-file-if-exists=.env --env-file-if-exists=.local/mps-runtime.env agent-api.mjs",
-    "test": "node --env-file-if-exists=.env --test *.test.mjs"
+    "test": "node --env-file-if-exists=.env --test \"*.test.mjs\" \"test/**/*.test.mjs\"",
+    "worker:structured": "node --env-file-if-exists=.env --env-file-if-exists=.env.structured worker.mjs",
+    "worker:image": "node --env-file-if-exists=.env --env-file-if-exists=.env.image worker.mjs"
   },
   "dependencies": {
     "eve": "0.71.0",
