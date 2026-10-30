@@ -99,3 +99,13 @@ test('performance: 10,000-row CSV validates in under 2 s',async()=>{
  await run(rows.join('\n')+'\n',contract({records:{min:1},unique:undefined}));
  assert.ok(Date.now()-t<2000,`took ${Date.now()-t} ms`);
 });
+
+test('real Preprod output (Advanced Web Research, spike 2026-10-30): CSV fence inside a research report',async()=>{
+ const text=readFileSync(new URL('./fixtures/structured/live/advanced-web-research-dax.md',import.meta.url),'utf8');
+ const c=contract({records:{exact:5},fields:[{name:'date',type:'date',format:'yyyy-MM-dd'},{name:'value',type:'number'}],unique:[['date']]});
+ const {d,report,by}=await run(text,c,{identifierFromPurchaser:'abc'});
+ assert.equal(d.origin,'result-fence');
+ assert.equal(d.text.split('\n')[0],'date,value');
+ assert.equal(by('delivery.clean').status,'warn');
+ assert.equal(report.verdict,'pass',renderReportMarkdown(report));
+});

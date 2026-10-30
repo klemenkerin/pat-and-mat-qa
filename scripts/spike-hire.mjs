@@ -9,6 +9,7 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {parseArgs} from 'node:util';
 import {createLiveAdapter} from '../qa/live.mjs';
+import {JOB_TERMINAL,effectiveJobStatus} from '../qa/pipeline.mjs';
 
 const {values:o}=parseArgs({options:{agent:{type:'string'},brief:{type:'string'},'input-json':{type:'string'},'max-credits':{type:'string'},refund:{type:'boolean'},'timeout-min':{type:'string'},task:{type:'string'},job:{type:'string'}}});
 if(!o.agent){console.error('--agent AGENT_ID is required');process.exit(2);}
@@ -55,10 +56,10 @@ try{
  // 4. Poll.
  let last;const limit=Number(o['timeout-min']??30)*60000;
  for(;;){
-  const j=await api.getJob(owner,job.id);
-  if(j.status!==last){timeline.push({at:new Date().toISOString(),sinceHireS:Math.round((Date.now()-t0)/1000),status:j.status});log('job status',j.status);last=j.status;}
-  if(['completed','failed','refund_resolved','dispute_resolved','payment_failed'].includes(j.status)||j.status==='input_required'){save('job.json',j);findings.job={status:j.status,jobType:j.jobType??null,credits:j.credits??null,hasResult:!!j.result,resultLength:j.result?.length??0,hasResultHash:!!j.resultHash,hasIdentifierFromPurchaser:!!j.identifierFromPurchaser,keys:Object.keys(j)};if(j.result)save('result.txt',j.result);break;}
-  if(Date.now()-t0>limit){findings.job={status:j.status,timedOut:true};break;}
+  const j=await api.getJob(owner,job.id);const st=effectiveJobStatus(j);
+  if(st!==last){timeline.push({at:new Date().toISOString(),sinceHireS:Math.round((Date.now()-t0)/1000),status:st,rawStatus:j.status,jobEvents:(j.events??[]).map(e=>({status:e.status,at:e.createdAt}))});log('job status',st,st!==j.status?`(raw ${j.status})`:'');last=st;}
+  if(JOB_TERMINAL.has(st)||st==='input_required'){save('job.json',j);findings.job={status:j.status,effectiveStatus:st,completedAt:j.completedAt??null,onChainStatus:j.onChainStatus??null,jobType:j.jobType??null,credits:j.credits??null,hasResult:!!j.result,resultLength:j.result?.length??0,hasResultHash:!!j.resultHash,hasIdentifierFromPurchaser:!!j.identifierFromPurchaser,keys:Object.keys(j)};if(j.result)save('result.txt',j.result);break;}
+  if(Date.now()-t0>limit){findings.job={status:j.status,effectiveStatus:st,completedAt:j.completedAt??null,onChainStatus:j.onChainStatus??null,timedOut:true};break;}
   await new Promise(r=>setTimeout(r,12000));
  }
  const [files,links]=await Promise.all([api.getJobFiles(owner,job.id).catch(e=>({error:e.message})),api.getJobLinks(owner,job.id).catch(e=>({error:e.message}))]);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPipeline} from '../qa/pipeline.mjs';
+import {createPipeline,effectiveJobStatus} from '../qa/pipeline.mjs';
 import {tempJournal,fakeClock,fakeSokosumi,fakeMode,fakeCatalog,baseConfig} from './helpers/fakes.mjs';
 
 function setup({task,jobPlan,config}={}){
@@ -172,4 +172,20 @@ test('QA_STOP_AFTER halts at the requested phase',async()=>{
  const s=await drive(ctx,{max:5});
  assert.equal(s.phase,'approved');
  assert.equal(count(ctx.sokosumi.calls,'hire'),0);
+});
+
+test('effectiveJobStatus: finished job stuck in payment_pending counts as completed (Preprod)',()=>{
+ assert.equal(effectiveJobStatus({status:'payment_pending',completedAt:'2026-10-30T20:29:33Z',result:'x'}),'completed');
+ assert.equal(effectiveJobStatus({status:'payment_pending',completedAt:null,result:null}),'payment_pending');
+ assert.equal(effectiveJobStatus({status:'payment_pending',completedAt:'2026-10-30T20:29:33Z',result:''}),'payment_pending');
+ assert.equal(effectiveJobStatus({status:'failed'}),'failed');
+});
+
+test('job finished while payment_pending is verified and completes the task',async()=>{
+ const ctx=setup({task:{description:'auto'},jobPlan:[{status:'payment_pending',completedAt:'2026-10-31T09:01:00Z',result:'good'}]});
+ const s=await drive(ctx);
+ assert.equal(s.phase,'completed');
+ assert.equal(s.attempts[0].jobStatus,'completed');
+ assert.equal(s.attempts[0].rawJobStatus,'payment_pending');
+ assert.equal(count(ctx.sokosumi.calls,'hire'),1);
 });

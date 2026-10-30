@@ -30,7 +30,15 @@ import {newState,transition,updateAttempt,currentAttempt} from './journal.mjs';
 
 export const WAITING=new Set(['awaiting-approval','job-polling']);
 export const TERMINAL=new Set(['completed','failed']);
-const JOB_TERMINAL=new Set(['completed','failed','refund_resolved','dispute_resolved','payment_failed']);
+export const JOB_TERMINAL=new Set(['completed','failed','refund_resolved','dispute_resolved','payment_failed']);
+/**
+ Preprod (spike 2026-10-30): the Agent can finish (completedAt set, result present, last job event COMPLETED)
+ while `status` stays payment_pending because the on-chain purchase never settles. Treat that as completed.
+*/
+export function effectiveJobStatus(job){
+ if(job?.status==='payment_pending'&&job.completedAt&&job.result)return 'completed';
+ return job?.status;
+}
 const APPROVE=/^\s*approve\b/i;
 
 export const marker=key=>`[qa:${key}]`;
@@ -153,13 +161,14 @@ export function createPipeline({deps,config}){
     const a=currentAttempt(s);
     if(a.lastPolledAt&&now()-a.lastPolledAt<config.QA_JOB_POLL_SECONDS*1000)return s;
     const job=await api.getJob(task,a.jobId);
-    s=updateAttempt(s,a.n,{lastPolledAt:now(),jobStatus:job.status});
-    if(job.status==='input_required')return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,'The agent asked for interactive input, which the QA flow does not support.')}),'verified',{},now());
-    if(!JOB_TERMINAL.has(job.status)){
+    const status=effectiveJobStatus(job);
+    s=updateAttempt(s,a.n,{lastPolledAt:now(),jobStatus:status,...(status!==job.status?{rawJobStatus:job.status}:{})});
+    if(status==='input_required')return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,'The agent asked for interactive input, which the QA flow does not support.')}),'verified',{},now());
+    if(!JOB_TERMINAL.has(status)){
      if(now()-a.hiredAt>config.QA_JOB_TIMEOUT_MINUTES*60000)return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,`No result within ${config.QA_JOB_TIMEOUT_MINUTES} minutes.`),timedOut:true}),'verified',{},now());
      return s;
     }
-    if(job.status!=='completed')return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,`The job ended with status ${job.status}.`)}),'verified',{},now());
+    if(status!=='completed')return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,`The job ended with status ${status}.`)}),'verified',{},now());
     return transition(s,'verifying',{},now());
    }
 
@@ -169,7 +178,7 @@ export function createPipeline({deps,config}){
     let report;
     try{report=await mode.verify({job,files,links,contract:s.contract,attempt:a.n,workDir:journal.taskDir(s.taskId,`attempt-${a.n}`)});}
     catch(e){report={verdict:'fail',checks:[{id:'verify.error',criterion:'QA verification ran',status:'fail',expected:'no error',observed:short(e),evidence:[]}],summary:`Verification error: ${short(e)}`};}
-    return transition(updateAttempt(s,a.n,{report,jobStatus:job.status}),'verified',{},now());
+    return transition(updateAttempt(s,a.n,{report,jobStatus:effectiveJobStatus(job)}),'verified',{},now());
    }
 
    case 'verified':{
