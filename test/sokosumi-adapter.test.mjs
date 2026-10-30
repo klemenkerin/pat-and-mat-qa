@@ -17,7 +17,10 @@ function setup(responses,extra={}){
  const runtime={
   fetchTaskEvents:async()=>({events:[{id:'e1'}]}),
   readRuntimeCredential:()=>'coworker_SECRETKEY',
-  createCoworkerHttpClient:({apiKey,contextUserId})=>({post:async p=>{ctxCalls.push({p,apiKey,contextUserId});if(extra.refundError)throw extra.refundError;return {data:{status:'refund_pending'}};}}),
+  createCoworkerHttpClient:({apiKey,contextUserId})=>({
+   post:async p=>{ctxCalls.push({p,apiKey,contextUserId});if(extra.refundError)throw extra.refundError;return {data:{status:'refund_pending'}};},
+   get:async p=>{ctxCalls.push({m:'GET',p,contextUserId});const r=extra.ctxResponses?.[p];if(r instanceof Error)throw r;return r??{data:{}};},
+  }),
  };
  const dir=mkdtempSync(join(tmpdir(),'qa-adapter-'));
  const api=createSokosumiAdapter({client,runtime,target,cli:a=>{cliCalls.push(a);return {status:'RUNNING',description:'brief'};},resultDir:()=>dir,fetchImpl:extra.fetchImpl});
@@ -34,14 +37,35 @@ test('hire posts to the task jobs route after verifying the task',async()=>{
 });
 
 test('read routes unwrap the data envelope',async()=>{
- const {api,client}=setup({'GET /v1/jobs/j1':{data:{id:'j1',status:'completed'}},'GET /v1/jobs/j1/files':{data:[{name:'a.csv'}]},'GET /v1/jobs/j1/links':{data:[]},'GET /v1/agents/a1/input-schema':{data:{input_data:[{id:'p'}]}},'GET /v1/tasks/t1/jobs?limit=100':{data:[{id:'j1'}]}});
- assert.equal((await api.getJob('j1')).status,'completed');
- assert.equal((await api.getJobFiles('j1'))[0].name,'a.csv');
- assert.deepEqual(await api.getJobLinks('j1'),[]);
+ const {api,client}=setup({'GET /v1/agents/a1/input-schema':{data:{input_data:[{id:'p'}]}},'GET /v1/tasks/t1/jobs?limit=100':{data:[{id:'j1'}]}});
  assert.equal((await api.getAgentInputSchema('a1')).input_data[0].id,'p');
  assert.equal((await api.listTaskJobs('t1'))[0].id,'j1');
  assert.deepEqual(await api.listEvents('t1'),[{id:'e1'}]);
  assert.ok(client.calls.every(c=>c[1].startsWith('/v1/')));
+});
+
+test('job reads carry the Task owner context (Preprod 403s without it)',async()=>{
+ const ctxResponses={'/v1/jobs/j1':{data:{id:'j1',status:'completed'}},'/v1/jobs/j1/files':{data:[{name:'a.csv'}]},'/v1/jobs/j1/links':{data:[]}};
+ const {api,client,ctxCalls}=setup({}, {ctxResponses});
+ const {ownerId,...rest}=task;
+ const owned={...rest,userId:'u9'};
+ assert.equal((await api.getJob(owned,'j1')).status,'completed');
+ assert.equal((await api.getJobFiles(owned,'j1'))[0].name,'a.csv');
+ assert.deepEqual(await api.getJobLinks(owned,'j1'),[]);
+ assert.deepEqual(ctxCalls.map(c=>[c.m,c.p,c.contextUserId]),[['GET','/v1/jobs/j1','u9'],['GET','/v1/jobs/j1/files','u9'],['GET','/v1/jobs/j1/links','u9']]);
+ assert.equal(client.calls.length,0);
+ await assert.rejects(api.getJob({id:'t1'},'j1'),/no owner id/);
+});
+
+test('organization job reads send both context headers',async()=>{
+ const seen=[];
+ const fetchImpl=async(url,init)=>{seen.push({url,init});return {ok:true,status:200,text:async()=>JSON.stringify({data:{id:'j1',status:'processing'}})};};
+ const {api}=setup({}, {fetchImpl});
+ assert.equal((await api.getJob({...task,organizationId:'org1'},'j1')).status,'processing');
+ assert.equal(seen[0].url,'https://api.preprod.sokosumi.com/v1/jobs/j1');
+ assert.equal(seen[0].init.method,'GET');
+ assert.equal(seen[0].init.headers['X-Context-User-Id'],'u1');
+ assert.equal(seen[0].init.headers['X-Context-Organization-Id'],'org1');
 });
 
 test('postEvent sends comment and status',async()=>{

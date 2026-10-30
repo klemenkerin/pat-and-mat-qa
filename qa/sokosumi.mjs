@@ -24,6 +24,25 @@ export function runCli(args,{exec=execFileSync}={}){
 export function createSokosumiAdapter({client,runtime,target,cli=runCli,resultDir,fetchImpl=fetch}){
  const id=target.coworkerId;
  const guard=taskId=>verifyRuntimeTask(client,taskId,target);
+ // Job routes need the Task owner's context (verified on Preprod: without it GET /v1/jobs/{id} is 403 "Workspace is missing").
+ const ctxClients=new Map();
+ async function asOwner(task,method,path){
+  // Core's Task payload names the owner `userId` (verified on Preprod); `ownerId` is accepted for older shapes.
+  const owner=task.ownerId??task.userId;
+  if(!owner)throw new Error('Task has no owner id; cannot send X-Context-User-Id');
+  if(task.organizationId){
+   // The CLI client cannot send X-Context-Organization-Id, so call Core directly.
+   const key=runtime.readRuntimeCredential(id);
+   const res=await fetchImpl(`${PREPROD_API_URL}${path}`,{method,redirect:'error',signal:AbortSignal.timeout(30000),
+    headers:{Accept:'application/json',Authorization:`Bearer ${key}`,'X-Context-User-Id':owner,'X-Context-Organization-Id':task.organizationId}});
+   const text=await res.text();
+   const body=text?JSON.parse(text):undefined;
+   if(!res.ok)throw Object.assign(new Error(`Core API request failed with status ${res.status}`),{status:res.status,body});
+   return body;
+  }
+  if(!ctxClients.has(owner))ctxClients.set(owner,runtime.createCoworkerHttpClient({apiKey:runtime.readRuntimeCredential(id),contextUserId:owner}));
+  return ctxClients.get(owner)[method.toLowerCase()](path);
+ }
  return {
   async start(taskId){
    const started=cli(['runtime','start',taskId,...target.runtimeArgs,'--coworker-id',id]);
@@ -35,27 +54,12 @@ export function createSokosumiAdapter({client,runtime,target,cli=runCli,resultDi
   async listTaskJobs(taskId){return list(await client.get(`/v1/tasks/${enc(taskId)}/jobs?limit=100`));},
   async getAgentInputSchema(agentId){return data(await client.get(`/v1/agents/${enc(agentId)}/input-schema`));},
   async hire(taskId,body){await guard(taskId);return data(await client.post(`/v1/tasks/${enc(taskId)}/jobs`,body));},
-  async getJob(jobId){return data(await client.get(`/v1/jobs/${enc(jobId)}`));},
-  async getJobFiles(jobId){return list(await client.get(`/v1/jobs/${enc(jobId)}/files`));},
-  async getJobLinks(jobId){return list(await client.get(`/v1/jobs/${enc(jobId)}/links`));},
+  async getJob(task,jobId){return data(await asOwner(task,'GET',`/v1/jobs/${enc(jobId)}`));},
+  async getJobFiles(task,jobId){return list(await asOwner(task,'GET',`/v1/jobs/${enc(jobId)}/files`));},
+  async getJobLinks(task,jobId){return list(await asOwner(task,'GET',`/v1/jobs/${enc(jobId)}/links`));},
   async requestRefund(task,jobId){
-   // Core's Task payload names the owner `userId` (verified on Preprod); `ownerId` is accepted for older shapes.
-   const owner=task.ownerId??task.userId;
-   if(!owner)return {status:'failed',detail:'Task has no owner id; cannot send X-Context-User-Id'};
    try{
-    let body;
-    if(task.organizationId){
-     // CLI 1.0.4's client cannot send X-Context-Organization-Id, so call Core directly.
-     const key=runtime.readRuntimeCredential(id);
-     const res=await fetchImpl(`${PREPROD_API_URL}/v1/jobs/${enc(jobId)}/refund`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(30000),
-      headers:{Accept:'application/json',Authorization:`Bearer ${key}`,'X-Context-User-Id':owner,'X-Context-Organization-Id':task.organizationId}});
-     const text=await res.text();
-     body=text?JSON.parse(text):undefined;
-     if(!res.ok)throw Object.assign(new Error(`Core API request failed with status ${res.status}`),{status:res.status,body});
-    }else{
-     const ctx=runtime.createCoworkerHttpClient({apiKey:runtime.readRuntimeCredential(id),contextUserId:owner});
-     body=await ctx.post(`/v1/jobs/${enc(jobId)}/refund`);
-    }
+    const body=await asOwner(task,'POST',`/v1/jobs/${enc(jobId)}/refund`);
     return {status:'requested',detail:data(body)?.status??'refund requested'};
    }catch(e){
     if(e?.status===422)return {status:'skipped',detail:'not refundable (not a paid job or no on-chain purchase yet)'};

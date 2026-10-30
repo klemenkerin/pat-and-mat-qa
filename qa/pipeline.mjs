@@ -17,9 +17,9 @@ import {newState,transition,updateAttempt,currentAttempt} from './journal.mjs';
    listTaskJobs(taskId) -> job[]                      // {id, name, status}
    getAgentInputSchema(agentId) -> inputSchema
    hire(taskId, {agentId,inputSchema,inputData,maxCredits,name}) -> job
-   getJob(jobId) -> job
-   getJobFiles(jobId) -> file[]
-   getJobLinks(jobId) -> link[]
+   getJob(task, jobId) -> job                         // sent with the Task owner's context headers
+   getJobFiles(task, jobId) -> file[]
+   getJobLinks(task, jobId) -> link[]
    requestRefund(task, jobId) -> {status:'requested'|'skipped'|'failed', detail}
    complete(taskId, resultText) -> any                // runtime complete --result-file
   },
@@ -152,7 +152,7 @@ export function createPipeline({deps,config}){
    case 'job-polling':{
     const a=currentAttempt(s);
     if(a.lastPolledAt&&now()-a.lastPolledAt<config.QA_JOB_POLL_SECONDS*1000)return s;
-    const job=await api.getJob(a.jobId);
+    const job=await api.getJob(task,a.jobId);
     s=updateAttempt(s,a.n,{lastPolledAt:now(),jobStatus:job.status});
     if(job.status==='input_required')return transition(updateAttempt(s,a.n,{report:jobFailureReport(a,job,'The agent asked for interactive input, which the QA flow does not support.')}),'verified',{},now());
     if(!JOB_TERMINAL.has(job.status)){
@@ -165,7 +165,7 @@ export function createPipeline({deps,config}){
 
    case 'verifying':{
     const a=currentAttempt(s);
-    const [job,files,links]=await Promise.all([api.getJob(a.jobId),api.getJobFiles(a.jobId).catch(()=>[]),api.getJobLinks(a.jobId).catch(()=>[])]);
+    const [job,files,links]=await Promise.all([api.getJob(task,a.jobId),api.getJobFiles(task,a.jobId).catch(()=>[]),api.getJobLinks(task,a.jobId).catch(()=>[])]);
     let report;
     try{report=await mode.verify({job,files,links,contract:s.contract,attempt:a.n,workDir:journal.taskDir(s.taskId,`attempt-${a.n}`)});}
     catch(e){report={verdict:'fail',checks:[{id:'verify.error',criterion:'QA verification ran',status:'fail',expected:'no error',observed:short(e),evidence:[]}],summary:`Verification error: ${short(e)}`};}

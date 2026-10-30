@@ -22,7 +22,7 @@ export function fakeSokosumi({task,jobPlan=[]}={}){
   async listTaskJobs(){return jobs.map(j=>({...j}));},
   async getAgentInputSchema(){return {input_data:[{id:'prompt',type:'textarea',name:'Prompt'}]};},
   async hire(id,body){calls.push(['hire',body.name]);const plan=jobPlan[jobs.length]??{status:'completed',result:'ok'};if(plan.throw)throw plan.throw;const j={id:`job${jobs.length+1}`,name:body.name,input:body,...plan};jobs.push(j);return {...j};},
-  async getJob(id){return {...jobs.find(j=>j.id===id)};},
+  async getJob(task,id){return {...jobs.find(j=>j.id===id)};},
   async getJobFiles(){return [];},
   async getJobLinks(){return [];},
   async requestRefund(task,jobId){calls.push(['refund',jobId]);return {status:'requested',detail:'refund_pending'};},
