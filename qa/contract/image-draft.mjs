@@ -2,8 +2,9 @@ import {z} from 'zod';
 import {imageContractSchema} from './image.mjs';
 
 export const SYSTEM_DRAFT_IMAGE=`You convert a customer's image request into an acceptance contract (JSON).
-Text: if the request quotes text or demands exact wording, use mode "exact" with the literal text; if it only describes the text's meaning, use "idea" with a one-sentence description; otherwise "none".
+Text: if the request quotes text or demands exact wording, use mode "exact" with the literal text. If it only describes the text's meaning, use "idea" with a one-sentence description; a banner, poster, flyer, sign, ad or label that announces, advertises or says something always carries text, so use "idea" for it. Use "none" only when no text is asked for or text is excluded.
 Objects: list only concrete, visible, detectable nouns the request explicitly names, as singular lowercase English noun phrases, with counts from number words ("two dogs" -> {"label":"dog","minCount":2}).
+Do not list places, scenery or backgrounds (beach, sky, street, room) as objects; mention them in "notes".
 Ignore style, mood and colour (record them in "notes"). Technical limits (format, size) only when the request states them.`;
 
 export const SHAPE_IMAGE=`{
@@ -11,7 +12,7 @@ export const SHAPE_IMAGE=`{
  "technical": {"formats": ["png","jpeg","webp"], "minWidth": 1024, "minHeight": 768, "maxBytes": 5000000, "aspectRatio": {"value": 1.7778, "tolerance": 0.02}},
  "text": {"mode": "exact"|"idea"|"none", "expected": "SUMMER SALE -50%"},
  "objects": [{"label": "bicycle", "minCount": 1}],
- "notes": "assumptions; colours and style are not checked"
+ "notes": "<your assumptions; omit if none>"
 }`;
 
 // "…", “…”, „…“, «…» and '…' (single quotes only at word boundaries, so "don't" is not a quote).
@@ -38,6 +39,8 @@ export function singularize(phrase){
  return [...words,w].join(' ');
 }
 
+// Scenery the detector cannot confirm as an object; dropped from objects and named in notes.
+const SCENERY=new Set(['beach','sky','background','scene','landscape','sea','ocean','water','street','city','room','ground','floor','wall','field','forest','park']);
 /** Deterministic rules on top of the LLM draft (plan Step 4.3 a–c). */
 export function postProcessImage(contract,brief){
  const c=structuredClone(contract);
@@ -57,10 +60,12 @@ export function postProcessImage(contract,brief){
  const byLabel=new Map();
  for(const o of c.objects??[]){
   const label=singularize(o.label);if(!label)continue;
+  if(SCENERY.has(label)){notes.push(`"${label}" is scenery, not checked as an object.`);continue;}
   byLabel.set(label,Math.max(byLabel.get(label)??0,o.minCount??1));
  }
  c.objects=[...byLabel].map(([label,minCount])=>({label,minCount}));
- if(notes.length)c.notes=notes.join(' ');
+ if(/^<.*>$/.test(notes[0]??''))notes.shift();
+ if(notes.length)c.notes=notes.join(' ');else delete c.notes;
  return c;
 }
 

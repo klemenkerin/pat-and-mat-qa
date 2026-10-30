@@ -50,3 +50,8 @@ test('revision: quotes in the comment replace the text; the brief is unchanged',
  assert.equal(r2.text.expected,'SUMMER SALE');
  assert.deepEqual(r2.objects,[{label:'cat',minCount:1}]);
 });
+test('scenery is not an object; placeholder notes are dropped',()=>{
+ const c=postProcessImage({text:{mode:'none'},objects:[{label:'dogs',minCount:2},{label:'beach'}],notes:'<your assumptions; omit if none>'},'Photo of two dogs on a beach');
+ assert.deepEqual(c.objects,[{label:'dog',minCount:2}]);
+ assert.equal(c.notes,'"beach" is scenery, not checked as an object.');
+});
