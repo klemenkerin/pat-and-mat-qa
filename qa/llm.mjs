@@ -9,7 +9,9 @@ export function defaultGenerate(env=process.env){
  return async({system,prompt})=>{
   if(!env.ZAI_API_KEY||!env.ZAI_BASE_URL||!env.ZAI_MODEL)throw new Error('ZAI_API_KEY, ZAI_BASE_URL and ZAI_MODEL must be set');
   model??=createOpenAICompatible({name:'zai',baseURL:env.ZAI_BASE_URL,apiKey:env.ZAI_API_KEY}).chatModel(env.ZAI_MODEL);
-  const r=await generateText({model,system,prompt,temperature:0,abortSignal:AbortSignal.timeout(120000)});
+  // LLM_TEMPERATURE is optional: reasoning models (e.g. OpenAI GPT-5.x) reject a custom temperature.
+  const t=env.LLM_TEMPERATURE?.trim();
+  const r=await generateText({model,system,prompt,...(t?{temperature:Number(t)}:{}),abortSignal:AbortSignal.timeout(120000)});
   return {text:r.text,usage:r.usage};
  };
 }
