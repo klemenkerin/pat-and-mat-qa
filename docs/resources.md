@@ -32,3 +32,4 @@
 | 4.1 second Coworker + parallel workers | pass | 2026-10-30 | Iris baseline Task `01a18eb8-6189-73dc-9a90-c62ae82b89ad` COMPLETED in template mode while `worker:structured` ran; journals/locks in `.local/image/` and `.local/structured/` |
 | 4.2 image contract schema + renderer | pass | 2026-10-30 | unit tests (`test/contract-image.test.mjs`) |
 | 4.3 image contract drafting | pass | 2026-10-30 | unit rules (a)-(c) + live `scripts/live-image-draft.mjs`: poster → exact "SUMMER SALE -50%" + bicycle; coffee banner → idea + cup of coffee, croissant; two dogs on a beach → none + 2× dog (beach = scenery) |
+| 4.4 image acquisition | pass | 2026-10-30 | unit tests with a local HTTP server: PNG file, JPEG markdown link, mislabelled JPEG detected by content, HTML/oversize/404 rejected, data URLs; signed-URL queries stripped from reports. Live run against a real image Job: n/a (no affordable image Agent) |
