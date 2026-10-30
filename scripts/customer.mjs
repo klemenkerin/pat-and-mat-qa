@@ -33,7 +33,7 @@ if(cmd==='create'){
  console.log(JSON.stringify({ok:true,event:r.event?.id??r.id??null}));
 }else if(cmd==='watch'){
  const id=pos[0];if(!id)throw new Error('watch needs TASK_ID');
- const seen=new Set();
+ const seen=new Set();let hinted=false;
  for(;;){
   const t=cli(['tasks','get',id,...scopeRead()]);const task=t.task??t.data??t;
   const ev=cli(['tasks','events',id,...scopeRead()]);const events=ev.events??ev.data??[];
@@ -41,7 +41,8 @@ if(cmd==='create'){
    const who=e.actor?.type??'?';const st=e.status?` [${e.status}]`:'';
    console.log(`\n--- ${e.createdAt??''} ${who}${st}\n${(e.comment??'').slice(0,4000)}`);}
   if(['COMPLETED','FAILED','CANCELED'].includes(task.status)){console.log(`\n=== Task ${task.status}`);if(task.result)console.log(String(task.result).slice(0,20000));break;}
-  if(task.status==='INPUT_REQUIRED')console.log(`\n(waiting for you: node scripts/customer.mjs approve ${id} [--changes "..."])`);
+  if(task.status==='INPUT_REQUIRED'&&!hinted){hinted=true;console.log(`\n(waiting for you: node scripts/customer.mjs approve ${id} [--changes "..."])`);}
+  if(task.status!=='INPUT_REQUIRED')hinted=false;
   await sleep(10000);
  }
 }else{

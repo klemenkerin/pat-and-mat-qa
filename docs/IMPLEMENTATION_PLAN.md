@@ -119,7 +119,7 @@ received
        ↺ customer edits → contract-revised → awaiting-approval   (max 3 rounds)
  → approved                  (customer comment "APPROVE…", or request.autoApprove=true)
  → hire-pending → hired      (attempt n; jobId recorded)
- → job-polling → job-terminal
+ → job-polling
  → verifying → verified(pass|fail)
    pass → completing → completed            (Task COMPLETED, result = deliverable + QA report)
    fail & budget left → refund-pending → refund-requested|refund-skipped
@@ -511,7 +511,7 @@ Also `renderContractMarkdown(contract)` in `qa/contract/render.mjs`: a compact, 
 
 **TEST GATE 3.4**
 - [ ] Unit tests for `buildInputData` with fixture schemas: single text field; text + option field; missing required → error; option value outside `values` → error.
-- [ ] **Live:** with `QA_STOP_AFTER=job-terminal`, one full approve→hire→poll cycle against a structured Agent. The journal shows `jobId`, the terminal status and the raw result saved to `${STATE_DIR}/<task>/attempt-1/`.
+- [ ] **Live:** with `QA_STOP_AFTER=verifying`, one full approve→hire→poll cycle against a structured Agent. The journal shows `jobId`, the terminal status and the raw result saved to `${STATE_DIR}/<task>/attempt-1/`.
 
 ### Step 3.5 — Deliverable extraction `qa/extract.mjs`
 

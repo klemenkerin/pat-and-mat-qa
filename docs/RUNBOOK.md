@@ -1,5 +1,7 @@
 # Runbook: live gates (run these in your Mac terminal)
 
+Shortcut for Gates 2.3, 2.2 and 1.4: `bash scripts/run-gates-1.sh` (log in `.local/gate-logs/`).
+
 All commands run from the repo root with Node 24 and Sokosumi CLI **1.1.0** (1.0.4 is broken against current Preprod: `--personal` commands return 404 on `/v1/users/me/workspace-access`), logged in with `sokosumi --preprod auth login`.
 Never paste keys into chat, commits or Task text.
 
@@ -35,7 +37,7 @@ Send back `.local/spike/<timestamp>/findings.json` (it contains no secrets). Rep
 
 ## Gates 3.3–3.8: structured QA end-to-end
 1. Fill `config/agents.json` with your groups (ids + names; the spike's schema.json can go into `inputSchema`).
-2. In `.env.structured` set `QA_MODE=structured`. Optional: `QA_STOP_AFTER=approved` (Gate 3.3) or `job-terminal` (Gate 3.4).
+2. In `.env.structured` set `QA_MODE=structured`. Optional: `QA_STOP_AFTER=approved` (Gate 3.3), `verifying` (Gate 3.4: hired and completed, not validated) or `verified`.
 3. Run the worker: `npm run worker:structured` (Eve is not needed in QA mode).
 4. Act as the customer in another terminal:
 ```bash
