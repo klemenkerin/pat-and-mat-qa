@@ -42,7 +42,7 @@ We build **two specialist QA Coworkers** (mentors' advice: show the pattern scal
 | 3.1–3.8 | Structured QA Coworker (Pat), incl. live happy run, retry loop with refund, crash/restart | ✅ | `docs/demo.md`; tag `agent1-personal` |
 | 3.9 | Structured Coworker in the TUM Workspace | ❌ | needs org approval / seat `[HUMAN]` |
 | 3.10 | Optional Eve follow-up chat | ❌ optional | |
-| 4.1–4.6 | Image Coworker (Iris), image contract, acquisition, OCR, detector benchmark (OWLv2 @ 0.15) | ✅ | `docs/detector-choice.md` |
+| 4.1–4.6 | Image Coworker (Mat), image contract, acquisition, OCR, detector benchmark (OWLv2 @ 0.15) | ✅ | `docs/detector-choice.md` |
 | 4.7 | Image validator pack + report | ✅ | unit + slow suite |
 | 4.8 | Image mode E2E (live), happy + retry, both workers concurrently | ✅ | `docs/demo.md`; image hire = local stand-in (`QA_HIRE_BACKEND=mock`, §4.6) |
 | 4.9 | Image Coworker in the TUM Workspace | ❌ | same `[HUMAN]` steps as 3.9 |
@@ -59,7 +59,7 @@ We build **two specialist QA Coworkers** (mentors' advice: show the pattern scal
 - `.env` (git-ignored, mode 600): model provider = **OpenAI** through the template's OpenAI-compatible provider: `ZAI_BASE_URL=https://api.openai.com/v1`, `ZAI_MODEL=gpt-5.4-nano`, `ZAI_CONTEXT_WINDOW_TOKENS=400000`, `LLM_TEMPERATURE=` (blank), `ZAI_API_KEY` set. `COWORKER_ID` set to the structured Coworker. **Never print or read the key.**
 - `.env.structured` (git-ignored): `QA_MODE=structured`, `COWORKER_ID=01a18e40-…`, `STATE_DIR=.local/structured`, org fields blank.
 - `config/agents.json`: structured = "Expose: Advanced Web Research" `cmmdca97d000304icco9htf5n` (1 credit, chosen by the agent with the human's OK); image = local stand-in `local-image-standin` (mock), because Preprod's only image Agent costs 500 credits.
-- Image Coworker "Iris" `01a18eb7-c523-7195-a1e5-238f76defa8b` (`.env.image`: `QA_MODE=image`, `QA_HIRE_BACKEND=mock`, `STATE_DIR=.local/image`).
+- Image Coworker "Mat - Image QA" (slug `iris-image-qa`, renamed from Iris on 2026-10-31) `01a18eb7-c523-7195-a1e5-238f76defa8b` (`.env.image`: `QA_MODE=image`, `QA_HIRE_BACKEND=mock`, `STATE_DIR=.local/image`).
 - **Credit budget:** Preprod only, at most 20 credits per hire and 100 in total.
 
 ### 2.3 Spike questions
@@ -223,7 +223,7 @@ CSV detection: ≥2 rows, ≥2 columns, and (when a header is expected) the head
 ## 5. What to do next (in order)
 
 1. **Sanity:** `nvm use 24 && sokosumi --version` (→ 1.1.0) `&& npm ci && npm test` (expect 149 pass).
-2. **Gates 3.9 / 4.9, TUM Workspace** `[HUMAN approvals]`: `workspaces list` → `coworkers connect <CW> --vendor-id <V> --workspace-id <ORG>` for Pat and Iris → an org owner/admin approves → `workspaces check <ORG>` (`taskSeatEligible:true`, GRANTED) → set `SOKOSUMI_ORGANIZATION_ID/SLUG` in `.env.structured` / `.env.image` → one E2E run each with `customer.mjs … --org-slug <slug>`. Then `git tag agent1-done` / `agent2-done`.
+2. **Gates 3.9 / 4.9, TUM Workspace** `[HUMAN approvals]`: `workspaces list` → `coworkers connect <CW> --vendor-id <V> --workspace-id <ORG>` for Pat and Mat → an org owner/admin approves → `workspaces check <ORG>` (`taskSeatEligible:true`, GRANTED) → set `SOKOSUMI_ORGANIZATION_ID/SLUG` in `.env.structured` / `.env.image` → one E2E run each with `customer.mjs … --org-slug <slug>`. Then `git tag agent1-done` / `agent2-done`.
 3. **Optional:** real image generation behind the stand-in's input form (SD-Turbo locally or OpenAI images); Eve follow-up chat (3.10); paid QA Task (5.1, needs Docker/Postgres, Blockfrost key, test ADA `[HUMAN]`).
 4. **Step 5.2:** rewrite README (what, architecture, run commands for both workers, limits incl. the mock image hire), final demo script, secrets check, team GitHub remote `[HUMAN]`, submission checklist (https://www.masumi.network/tum-hackathon/submission).
 

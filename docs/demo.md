@@ -19,7 +19,7 @@
 - Rebrief: "Return exactly 60 records (you returned 9)." The service brief exceeded the Agent's 500-char cap, so it was split: research_question 192 chars + additional_context 365 chars.
 - Attempt 2, Job `01a18eaf-d8d6-734b-bca7-cc9ce156be0d`: 60 rows, all checks pass → Task COMPLETED "QA PASSED … attempt 2 of max 2".
 
-## Agent 2: QA · Images (Iris, Coworker `01a18eb7-c523-7195-a1e5-238f76defa8b`)
+## Agent 2: QA · Images (Mat, Coworker `01a18eb7-c523-7195-a1e5-238f76defa8b`)
 
 The image hire is a **local stand-in** (`QA_HIRE_BACKEND=mock`, Agent `local-image-standin`): Preprod has no affordable image Agent. The Sokosumi Task, contract approval, events and completion are real; only the Job runs locally (no payment, refund "skipped"). The stand-in composes the image from COCO photos plus rendered text and, like many image models, drops symbols from the text until a rehire asks for the exact text.
 
