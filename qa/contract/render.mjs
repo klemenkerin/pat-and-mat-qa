@@ -1,3 +1,4 @@
+import {seriesConstraint} from './series.mjs';
 const q=v=>`\`${v}\``;
 function fieldLine(f){
  const parts=[`${q(f.name)}: ${f.type}`];
@@ -23,6 +24,10 @@ export function structuredCriteria(c){
  out.push(`${c.allowExtraFields?'Fields (extra fields allowed)':'Exactly these fields, no others'}:`);
  for(const f of c.fields)out.push(`  - ${fieldLine(f)}`);
  for(const key of c.unique??[])out.push(`No duplicate ${key.length>1?'combinations of ':''}${key.map(q).join(' + ')}.`);
+ if(c.series){
+  out.push(seriesConstraint(c.series));
+  if(c.series.valueFields.length)out.push(`Warning only: the same ${c.series.valueFields.map(q).join(' / ')} on consecutive dates of one series is flagged as forward-filled.`);
+ }
  return out;
 }
 /** One-paragraph criteria for the service Agent's input, where space is limited. Same requirements as structuredCriteria. */
@@ -32,10 +37,15 @@ export function compactCriteria(c){
  if(c.output.format==='csv'){const d=c.output.csv?.delimiter??',';parts.push(`CSV, delimiter ${d==='\t'?'tab':`"${d}"`}, ${(c.output.csv?.header??true)?'with header row':'no header row'}`);}
  else parts.push(`valid JSON${c.output.json?.recordsPath?`, records array at ${c.output.json.recordsPath}`:c.output.json?.root==='object'?' object':' array of records'}`);
  const r=c.records;
- if(r?.exact!==undefined)parts.push(`exactly ${r.exact} ${unit}`);
- else if(r?.min!==undefined&&r?.max!==undefined)parts.push(`${r.min} to ${r.max} ${unit}`);
- else if(r?.min!==undefined)parts.push(`at least ${r.min} ${unit}`);
- else if(r?.max!==undefined)parts.push(`at most ${r.max} ${unit}`);
+ // With a series the grid sentence below states the row count and the key, so leave them out (the Agent's input is capped).
+ const s=c.series;
+ const rowsInGrid=s&&r?.exact===s.periods*(s.entities?.length??1);
+ if(!rowsInGrid){
+  if(r?.exact!==undefined)parts.push(`exactly ${r.exact} ${unit}`);
+  else if(r?.min!==undefined&&r?.max!==undefined)parts.push(`${r.min} to ${r.max} ${unit}`);
+  else if(r?.min!==undefined)parts.push(`at least ${r.min} ${unit}`);
+  else if(r?.max!==undefined)parts.push(`at most ${r.max} ${unit}`);
+ }
  const field=f=>{
   const x=[f.type];
   if(f.format)x.push(f.format);
@@ -48,8 +58,9 @@ export function compactCriteria(c){
  };
  parts.push(`${c.allowExtraFields?'columns':'only columns'}: ${c.fields.map(field).join('; ')}`);
  if(c.fields.some(f=>f.required&&!(f.maxNullRate>0)))parts.push('no empty values except where marked');
- for(const key of c.unique??[])parts.push(`${key.join(' + ')} unique`);
- return `${parts.join('; ')}.`;
+ const gridKey=s&&[s.timeField,s.entityField].filter(Boolean).sort().join('+');
+ for(const key of c.unique??[])if(!(s&&[...key].sort().join('+')===gridKey))parts.push(`${key.join(' + ')} unique`);
+ return `${parts.join('; ')}.${s?` ${seriesConstraint(s)}`:''}`;
 }
 export function renderCriteria(lines){let n=0;return lines.map(l=>l.startsWith('  - ')?`   ${l.trim()}`:`${++n}. ${l}`).join('\n');}
 export function renderStructuredContract(c){

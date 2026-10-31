@@ -4,7 +4,9 @@ const cell=s=>String(s??'').replace(/\|/g,'\\|').replace(/\r?\n/g,' ').slice(0,1
 export function buildReport({checks,attempt,jobId,agentId,deliverable}){
  const failed=checks.filter(c=>c.status==='fail');
  const verdict=failed.length?'fail':'pass';
- const summary=failed.length?`${failed.length} of ${checks.length} checks failed: ${failed.map(c=>c.id).join(', ')}`:`all ${checks.filter(c=>c.status==='pass').length} checks passed${checks.some(c=>c.status==='warn')?' (with warnings)':''}`;
+ const n=s=>checks.filter(c=>c.status===s).length;
+ // Same N on every attempt (validators report a contract-constant check set); failed ids follow for the rebrief comment.
+ const summary=`${n('pass')} passed, ${n('warn')} warning${n('warn')===1?'':'s'}, ${n('skip')} skipped, ${failed.length} failed of ${checks.length} checks${failed.length?`: ${failed.map(c=>c.id).join(', ')}`:''}`;
  return {verdict,summary,attempt,jobId,agentId,deliverable:deliverable?{origin:deliverable.origin,name:deliverable.name,sha256:deliverable.sha256}:null,checks};
 }
 

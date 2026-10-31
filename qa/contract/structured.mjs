@@ -34,6 +34,16 @@ export const structuredContractSchema=z.object({
  fields:z.array(field).min(1).max(200),
  unique:z.array(z.array(z.string().min(1)).min(1)).optional(),
  allowExtraFields:z.boolean().default(false),
+ // Panel / time series (qa/contract/series.mjs): one row per (timeField × entity) over `periods` dates.
+ series:z.object({
+  timeField:z.string().min(1),
+  entityField:z.string().min(1).optional(),
+  entities:z.array(z.string()).min(1).max(500).optional(),
+  periods:z.number().int().min(1).max(10000),
+  periodName:z.string().trim().min(1).max(40).default('date'),
+  calendar:z.enum(['any','weekdays']).default('any'),
+  valueFields:z.array(z.string().min(1)).default([]),
+ }).strict().optional(),
  retry:retrySchema,
  notes:z.string().max(4000).optional(),
 }).strict().superRefine((c,ctx)=>{
@@ -43,6 +53,14 @@ export const structuredContractSchema=z.object({
  const r=c.records;
  if(r&&r.exact!==undefined&&(r.min!==undefined||r.max!==undefined))ctx.addIssue({code:'custom',message:'records: use exact or min/max, not both'});
  if(r&&r.min!==undefined&&r.max!==undefined&&r.min>r.max)ctx.addIssue({code:'custom',message:'records: min > max'});
+ const sr=c.series;
+ if(sr){
+  const byName=new Map(c.fields.map(f=>[f.name,f]));
+  if(byName.get(sr.timeField)?.type!=='date')ctx.addIssue({code:'custom',message:`series.timeField ${sr.timeField} must be a date field`});
+  if(sr.entityField&&!byName.has(sr.entityField))ctx.addIssue({code:'custom',message:`series.entityField ${sr.entityField} is not a field`});
+  if(!!sr.entityField!==!!sr.entities)ctx.addIssue({code:'custom',message:'series: entityField and entities go together'});
+  for(const v of sr.valueFields)if(!byName.has(v))ctx.addIssue({code:'custom',message:`series.valueFields: unknown field ${v}`});
+ }
 });
 
 export function parseStructuredContract(obj){return structuredContractSchema.parse(obj);}

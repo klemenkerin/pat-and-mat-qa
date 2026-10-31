@@ -20,9 +20,9 @@ const maxLen=f=>{const v=(f.validations??[]).find(x=>x?.validation==='max');retu
 
 /** Brief sent to the service agent: original brief + hard requirements + fixes from failed attempts. */
 export function composeServiceParts({brief,criteriaText,attempt,fixInstructions=[]}){
- let requirements=`Hard requirements (checked automatically):\n${criteriaText.trim()}`;
- if(attempt>1&&fixInstructions.length)requirements+=`\n\nYour previous attempt was rejected. Fix ALL of these issues:\n${fixInstructions.map(f=>`- ${f}`).join('\n')}`;
- return {brief:brief.trim(),requirements};
+ const criteria=`Hard requirements (checked automatically):\n${criteriaText.trim()}`;
+ const fixes=attempt>1&&fixInstructions.length?`Your previous attempt was rejected. Fix ALL of these issues:\n${fixInstructions.map(f=>`- ${f}`).join('\n')}`:'';
+ return {brief:brief.trim(),requirements:[criteria,fixes].filter(Boolean).join('\n\n'),criteria,fixes};
 }
 export function composeServiceBrief(o){const p=composeServiceParts(o);return `${p.brief}\n\n${p.requirements}`;}
 
@@ -73,10 +73,16 @@ export async function buildInputData({inputSchema,serviceBrief,parts,llm}){
   let data={...hidden,[main.id]:serviceBrief};
   const m=maxLen(main);
   if(m&&serviceBrief.length>m){
-   // Too long for one field: brief in the main field, requirements and fixes in an optional second text field.
+   // Too long for one field: spread brief, criteria and fixes over the main field and an optional second text field.
+   // Whole parts only, in this order of preference (live rehire 2026-10-31: brief 192 + criteria 452 + fixes > 2 × 500).
    const extra=parts&&texts.find(f=>f!==main&&isOptional(f));
    if(!extra)throw new Error(`The brief (${serviceBrief.length} chars) exceeds the ${main.id} limit of ${m} characters`);
-   data={...hidden,[main.id]:parts.brief,[extra.id]:parts.requirements};
+   const join=(...xs)=>xs.filter(Boolean).join('\n\n');
+   const options=[[parts.brief,parts.requirements],...(parts.fixes?[[join(parts.brief,parts.fixes),parts.criteria],[join(parts.brief,parts.criteria),parts.fixes]]:[])];
+   const em=maxLen(extra)??Infinity;
+   const fit=options.find(([a,b])=>a.length<=m&&b.length<=em);
+   if(!fit)throw new Error(`The brief and requirements (${options[0].map(x=>x.length).join(' + ')} chars) do not fit ${main.id} (${m}) and ${extra.id} (${em===Infinity?'no limit':em})`);
+   data={...hidden,[main.id]:fit[0],[extra.id]:fit[1]};
   }
   const p=validateInputData(inputSchema,data);if(p.length)throw new Error(p.join('; '));
   return data;

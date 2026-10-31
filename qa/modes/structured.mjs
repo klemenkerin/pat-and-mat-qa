@@ -3,6 +3,7 @@ import {readFileSync,writeFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {structuredContractSchema} from '../contract/structured.mjs';
 import {renderStructuredContract,compactCriteria} from '../contract/render.mjs';
+import {applySeries} from '../contract/series.mjs';
 import {parseQaRequest} from '../request.mjs';
 import {composeServiceParts,buildInputData,schemaFields,withFieldLimits} from '../hire.mjs';
 import {extractStructured} from '../extract.mjs';
@@ -46,8 +47,12 @@ export function briefRecordCount(brief){
  return t?{exact:Number(t[1])}:undefined;
 }
 
-/** Deterministic fixes on top of the LLM draft. */
+/** Deterministic fixes on top of the LLM draft. The series block (panel / time series) is derived here, in code. */
 export function postProcess(contract,brief){
+ const c=applySeries(postProcessFields(contract,brief),brief);
+ return c;
+}
+function postProcessFields(contract,brief){
  const c=structuredClone(contract);
  const count=briefRecordCount(brief);
  if(count){
@@ -67,7 +72,9 @@ export function postProcess(contract,brief){
 
 function contractSchemaWith(fixed){
  return z.any().transform((o,ctx)=>{
-  const r=structuredContractSchema.safeParse({...(o&&typeof o==='object'?o:{}),...fixed});
+  // The series block is derived in code (postProcess), never taken from the LLM.
+  const {series:_series,...base}=o&&typeof o==='object'?o:{};
+  const r=structuredContractSchema.safeParse({...base,...fixed});
   if(!r.success){for(const i of r.error.issues)ctx.addIssue({code:'custom',message:i.message,path:i.path});return z.NEVER;}
   return r.data;
  });
@@ -92,7 +99,9 @@ export function createStructuredMode({llm,fetchImpl=fetch}){
    const revised=await llm.generateJson({system:`${SYSTEM_DRAFT}\nYou now revise an existing contract: apply the customer's requested changes and change nothing else.`,
     prompt:`Current contract:\n${JSON.stringify(contract,null,1)}\n\nCustomer's requested changes:\n"""\n${comment}\n"""\n\nReturn the full updated contract JSON.`,
     schema:contractSchemaWith({kind,version,agentId,brief,retry})});
-   return structuredContractSchema.parse({...revised,fields:revised.fields.map(f=>['date','datetime','time'].includes(f.type)?{...f,format:normalizeDateFormat(f.format)}:f)});
+   const fixedFields={...revised,fields:revised.fields.map(f=>['date','datetime','time'].includes(f.type)?{...f,format:normalizeDateFormat(f.format)}:f)};
+   // Re-derive the series from brief + comment ("make it 30 trading days" wins over the brief's 20).
+   return structuredContractSchema.parse(applySeries(fixedFields,`${brief}\n${comment}`));
   },
 
   renderContract:renderStructuredContract,

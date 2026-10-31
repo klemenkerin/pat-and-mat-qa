@@ -51,3 +51,12 @@ test('text mode none skips OCR; small image fails the width check',async()=>{
  const {report}=await run(`![s](${dataUrl('small.png')})`,{contract:c});
  assert.deepEqual(report.checks.filter(x=>x.status==='fail').map(x=>[x.id,x.fix]),[['technical.width','Image is 200×100; minimum width is 800 px.']]);
 });
+test('same image check set on every attempt: no image, a good image and a contract with 2 slots',async()=>{
+ const good=await run(`![poster](${dataUrl('text-exact.png')})`);
+ const none=await run('Sorry, no image.');
+ assert.deepEqual(none.report.checks.map(c=>c.id),good.report.checks.map(c=>c.id));
+ assert.match(none.report.summary,/of 6 checks: images\.count$/);
+ const two=parseImageContract({...base,images:{min:1,max:2}});
+ const one=await run(`![a](${dataUrl('text-exact.png')})`,{contract:two});
+ assert.deepEqual(one.report.checks.filter(c=>c.status==='skip').map(c=>c.id),['img2.technical.format','img2.technical.width','img2.text','img2.objects.bicycle','integrity.hash']);
+});

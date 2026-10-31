@@ -60,5 +60,11 @@ test('too long for the main field: brief and requirements are split over two tex
  const data=await buildInputData({inputSchema:s,serviceBrief:`${parts.brief}\n\n${parts.requirements}`,parts,llm:noLlm});
  assert.deepEqual(data,{research_question:'Short brief',additional_context:parts.requirements});
  const long=composeServiceParts({brief:'Short brief',criteriaText:'x'.repeat(100),attempt:1});
- await assert.rejects(buildInputData({inputSchema:s,serviceBrief:`${long.brief}\n\n${long.requirements}`,parts:long,llm:noLlm}),/additional_context is longer than 120/);
+ await assert.rejects(buildInputData({inputSchema:s,serviceBrief:`${long.brief}\n\n${long.requirements}`,parts:long,llm:noLlm}),/do not fit research_question \(40\) and additional_context \(120\)/);
+ // Rehire: brief + fixes in the main field when the criteria alone fill the second field.
+ const s2=withFieldLimits(s,{research_question:120,additional_context:120});
+ const re=composeServiceParts({brief:'Short brief',criteriaText:'x'.repeat(60),attempt:2,fixInstructions:['Return 60 rows.']});
+ assert.ok(re.requirements.length>120);
+ const d2=await buildInputData({inputSchema:s2,serviceBrief:`${re.brief}\n\n${re.requirements}`,parts:re,llm:noLlm});
+ assert.deepEqual(d2,{research_question:`Short brief\n\n${re.fixes}`,additional_context:re.criteria});
 });

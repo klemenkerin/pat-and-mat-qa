@@ -7,7 +7,8 @@ import {hashCheck} from '../structured/index.mjs';
 
 /**
  Run the image checks (plan Step 4.7), cheapest first: images.count, technical.*, text, objects.<label>, integrity.hash.
- MVP rule: every image must pass every check; with several images, check ids get an `img<k>.` prefix.
+ MVP rule: every image must pass every check. When the contract allows several images, check ids get an `img<k>.` prefix
+ per slot k = 1..images.max; a slot without an image reports its checks as skip, so N is the same on every attempt.
  ocrFn(buffer) -> {text, cleanText}; detectFn(path, labels) -> [{label, score, box}] (low threshold; objectChecks applies ours).
 */
 export async function validateImages({job,files,links,contract,workDir,ocrFn,detectFn,llm,threshold,fetchImpl=fetch}){
@@ -20,8 +21,12 @@ export async function validateImages({job,files,links,contract,workDir,ocrFn,det
  const perImage=[];
  const labels=contract.objects.map(o=>o.label);
  const t=contract.detector?.threshold??threshold;
- for(const img of images){
-  const prefix=images.length>1?`img${img.k}.`:'';
+ // One slot per allowed image, so every attempt reports the same checks; extra images only fail images.count.
+ const slots=Math.max(1,max);
+ for(let k=1;k<=slots;k++){
+  const img=images[k-1];
+  const prefix=slots>1?`img${k}.`:'';
+  if(!img){checks.push(...plannedForMissing(contract,t,prefix,k));continue;}
   checks.push(...technicalChecks(img,contract.technical,prefix));
   const ocrResult=contract.text.mode==='none'?{text:'',cleanText:''}:await ocrFn(readFileSync(img.path));
   checks.push(await checkText({ocrResult,text:contract.text,llm,id:`${prefix}text`}));
@@ -31,4 +36,13 @@ export async function validateImages({job,files,links,contract,workDir,ocrFn,det
  }
  checks.push(hashCheck(job));
  return {checks,images:perImage,rejected};
+}
+
+/** The per-image checks of slot k, as skip (no image delivered for it). */
+function plannedForMissing(contract,threshold,prefix,k){
+ const skip=c=>({id:c.id,criterion:c.criterion,status:'skip',expected:c.expected,observed:`no image ${k}`,evidence:[]});
+ const probe={format:'',width:0,height:0,bytes:0};
+ return [...technicalChecks(probe,contract.technical,prefix).map(skip),
+  skip({id:`${prefix}text`,criterion:'Text',expected:contract.text.mode==='none'?'no requirement':JSON.stringify(contract.text.expected??'')}),
+  ...objectChecks([],contract.objects,threshold,prefix).map(skip)];
 }
