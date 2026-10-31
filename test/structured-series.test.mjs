@@ -5,7 +5,7 @@ import {parseStructuredContract} from '../qa/contract/structured.mjs';
 import {deriveSeries,briefPeriods,seriesConstraint} from '../qa/contract/series.mjs';
 import {postProcess,createStructuredMode} from '../qa/modes/structured.mjs';
 import {validateStructured} from '../qa/validators/structured/index.mjs';
-import {buildReport,fixInstructions} from '../qa/report.mjs';
+import {buildReport,fixInstructions,renderReportMarkdown} from '../qa/report.mjs';
 import {createLlm} from '../qa/llm.mjs';
 
 // Contract of live Task 01a18ea9 (2026-10-30) as drafted then, before the series block existed.
@@ -97,6 +97,8 @@ test('same check set on every attempt: nothing found, parse error and a good fil
  for(const other of [n(null),n('a,b\n"unclosed,1\n')]){assert.equal(other.length,17);assert.deepEqual(ids(other),ids(good));}
  // deliverable.found fails; the other 16 (incl. integrity.hash) are skipped.
  assert.equal(n(null).filter(x=>x.status==='skip').length,16);
+ const md=renderReportMarkdown(buildReport({checks:n(null),attempt:1,jobId:'j',agentId:'a',deliverable:{kind:'unknown',tried:['result: no parseable csv']}}));
+ assert.doesNotMatch(md,/undefined/);
 });
 
 test('revision: "30 trading days" in the comment re-derives the series',async()=>{

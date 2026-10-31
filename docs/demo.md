@@ -33,3 +33,9 @@ The image hire is a **local stand-in** (`QA_HIRE_BACKEND=mock`, Agent `local-ima
 - Attempt 1, `mock-c05a2177-…`: OCR read "CAT TOYS 50" → `text` fails (3 characters differ), cats pass → comment "Attempt 1/3 failed … Refund: skipped (mock job: nothing was paid)" with the report.
 - Rebrief: `Text must read exactly "CAT TOYS -50%!"; found "CAT TOYS 50" …` → attempt 2, `mock-7c9eb1d9-…`: all checks pass → Task COMPLETED.
 - `worker:structured` (Eve) was running the whole time.
+
+### Panel coverage checks (2026-10-31): "right row count, wrong shape"
+- Before: Task `01a18ea9…` attempt 2 passed with 60 rows although FTSE100 had weekend rows (forward-filled) and DAX/CAC40 had gaps.
+- Now the contract carries a series rule ("Exactly one row per index per trading day: 20 distinct weekday dates x 3 index values … = 60 rows. No weekend dates. Do not forward-fill …") and three checks: `coverage.grid`, `dates.trading_days`, `values.stale` (warning).
+- Live Task `01a1915a-28f3-764f-9e7f-ec3c1505ca59`: attempt 1 returned no data → refund requested → rehire → attempt 2 had 20 weekdays × 3 with no repeats → COMPLETED.
+- Replay of the old weekend-padded Job `01a18eaf-…` through the new checks: FAIL on `coverage.grid` (26 dates, 18 missing pairs) and `dates.trading_days` (5 weekend dates), WARN on `values.stale` (FTSE100 10839.2 on 16–18 Oct, 10724.7 on 23–25 Oct). Good slide for the demo.

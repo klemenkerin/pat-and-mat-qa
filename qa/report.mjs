@@ -7,7 +7,7 @@ export function buildReport({checks,attempt,jobId,agentId,deliverable}){
  const n=s=>checks.filter(c=>c.status===s).length;
  // Same N on every attempt (validators report a contract-constant check set); failed ids follow for the rebrief comment.
  const summary=`${n('pass')} passed, ${n('warn')} warning${n('warn')===1?'':'s'}, ${n('skip')} skipped, ${failed.length} failed of ${checks.length} checks${failed.length?`: ${failed.map(c=>c.id).join(', ')}`:''}`;
- return {verdict,summary,attempt,jobId,agentId,deliverable:deliverable?{origin:deliverable.origin,name:deliverable.name,sha256:deliverable.sha256}:null,checks};
+ return {verdict,summary,attempt,jobId,agentId,deliverable:deliverable?.sha256?{origin:deliverable.origin,name:deliverable.name,sha256:deliverable.sha256}:null,checks};
 }
 
 export function renderReportMarkdown(r){

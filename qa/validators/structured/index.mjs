@@ -99,7 +99,7 @@ export function plannedChecks(contract){
 const fieldCriterion=f=>`Field ${f.name}: ${f.type}${f.format?` (${f.format})`:''}${f.enum?` in ${f.enum.join('|')}`:''}`;
 function complete(contract,checks,reason){
  const byId=new Map(checks.map(c=>[c.id,c]));
- return plannedChecks(contract).map(p=>byId.get(p.id)??check(p.id,p.criterion,'skip','evaluated',`not evaluated: ${reason}`));
+ return plannedChecks(contract).map(p=>byId.get(p.id)??check(p.id,p.criterion,'skip','—',`not evaluated: ${reason}`));
 }
 
 export function validateStructured({deliverable,contract,job}){
